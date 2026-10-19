@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from Accommodation import AccommodationPage
+from accommodation import AccommodationPage
 
 def show_page(self, page):
     for widget in self.content_frame.winfo_children():
