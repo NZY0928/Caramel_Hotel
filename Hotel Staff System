@@ -1,0 +1,130 @@
+#Hotel Home Page can choose to be guest or staff
+ 
+#For staff system
+print("""
+
+
+Caramel Hotel Staff System
+Staff can use this system to manage hotel operations, including room bookings, guest check-ins and check-outs, staff scheduling, and inventory management. The system provides an intuitive interface for staff members to efficiently handle their daily tasks and ensure a smooth operation of the hotel.
+
+
+""")
+
+staff_id = input("Please enter your staff ID to log in: ")
+
+while True:
+    if staff_id == "12345" or staff_id == "67890":  # Example staff IDs for authentication
+        print("Welcome, Staff Member!")
+        print("""
+        [1] Room Bookings
+        [2] Guest Check-ins
+        [3] Guest Check-outs
+        [4] Room Checking
+        [5] Restaurant Management
+        [6] Exit
+    """)
+    
+    option = input("Please select an option (1-6): ")
+    
+    if option == "1":
+        print("""
+        You have selected Room Bookings.
+        List of available rooms:
+        1. Single Room (RM100/night)
+        2. Double Room (RM150/night)
+        3. Suite (RM250/night)
+        4. Deluxe Suite (RM400/night)
+        5. Presidential Suite (RM600/night)
+        6. Family Room (RM200/night)
+        """) 
+        # Code for room bookings functionality goes here
+
+        nights = int(input("How many nights would the guest like to stay? :"))
+
+        room_choice = input("Please select a room type (1-6): ")
+        if room_choice == "1":
+            room_type = "Single Room"
+            price = nights*100
+        elif room_choice == "2":
+            room_type = "Double Room"
+            price = nights*150
+        elif room_choice == "3":
+            room_type = "Suite"
+            price = nights*250
+        elif room_choice == "4":
+            room_type = "Deluxe Suite"
+            price = nights*400
+        elif room_choice == "5":
+            room_type = "Presidential Suite"
+            price = nights*600
+        elif room_choice == "6":
+            room_type = "Family Room"
+            price = nights*200
+        else:
+            print("Invalid room type selected.")
+            continue
+        
+        guest_booking = input("Enter guest name for booking: ")
+        print(f"Booking confirmed for {guest_booking} in room type {room_type} for {nights} nights.")
+        print(f"Amount pay: RM", price)
+
+        input("Press Enter to return to the main menu.")
+
+        
+    elif option == "2":
+        print("You have selected Guest Check-ins.") # Code for guest check-ins functionality goes here
+        guest_name = input("Enter guest name for check-in: ")
+        from datetime import datetime
+        check_in_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Check-in confirmed for {guest_name} on {check_in_date}.")
+
+        input("Press Enter to return to the main menu.")
+        
+    elif option == "3":
+        print("You have selected Guest Check-outs.") # Code for guest check-outs functionality goes here
+        guest_name = input("Enter guest name for check-out: ")
+        from datetime import datetime
+        check_out_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Check-out confirmed for {guest_name} on {check_out_date}.")
+
+        input("Press Enter to return to the main menu.")
+        
+    elif option == "4":
+        print("You have selected Room Checking.") # Code for room checking functionality goes here
+        name_guest = input("Enter guest name for room check: ")
+        from datetime import datetime
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Room check initiated for {name_guest} at {current_time}.")
+
+    elif option == "5":
+        print("You have selected Restaurant Management.") # Code for restaurant management functionality goes here
+        print("""
+        Restaurant Management Options:
+        1. Table Reservations
+        """)
+
+        restaurant_option = input("Please select a restaurant option (1): ")
+        if restaurant_option == "1":
+            print("Managing table reservations...")
+            guest_name = input("Enter guest name for table reservation: ")
+            reservation_time = input("Enter reservation time (e.g., 7:00 PM): ")
+            # Code to manage table reservations goes here
+            print(f"Table reservation confirmed for {guest_name} at {reservation_time}.")
+
+        input("Press Enter to return to the main menu.")
+
+    elif option == "6":
+        print("""
+        Exiting the system. Goodbye!
+        Please ensure to log out and secure your staff ID before leaving.
+        Restart the program to log in again.
+        """)
+        break
+
+    else:
+        print("Invalid option. Please try again.")
+
+else:
+    print("Invalid staff ID. Access denied.")
+
+
