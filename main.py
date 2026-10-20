@@ -1,5 +1,5 @@
 import tkinter as tk
-from accommodation import AccommodationPage
+"""from accommodation import AccommodationPage"""
 
 class HotelApp(tk.Tk):
     def __init__(self):
@@ -67,19 +67,19 @@ class HotelApp(tk.Tk):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-        # Show the selected page
+        """# Show the selected page
         if page == "Accommodation":
             accommodation_page = AccommodationPage(self.content_frame)
             accommodation_page.pack(fill="both", expand=True)
-        else:
+        else:"""
             # Placeholder until the other modules are connected
-            tk.Label(
-                self.content_frame,
-                text=page,
-                font=("Arial", 24, "bold"),
-                bg="white",
-                fg="#3E2723"
-            ).pack(pady=30)
+        tk.Label(
+            self.content_frame,
+            text=page,
+            font=("Arial", 24, "bold"),
+            bg="white",
+            fg="#3E2723"
+        ).pack(pady=30)
 
 
 if __name__ == "__main__":
