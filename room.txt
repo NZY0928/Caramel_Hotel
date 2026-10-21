@@ -1,0 +1,25 @@
+# room_type|room_number|price_per_night|features|status|image_filename
+
+Superior Twin|101|160|City view, Shower, shared bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Free breakfast, parking 2 single beds|Available|Superior_Twin.JPEG
+
+Superior Queen|150|160|City view, Shower, private bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 1 queen bed| Available|Superior_Queen.JPEG
+
+Superior Triple|200|200|City view, Shower, shared bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 1 queen bed and 2 single beds|Available|Superior_Triple.JPEG
+
+Deluxe Twin|250|180|City view, Shower, private bathroom, Bathrobes, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 2 single beds|Available|Deluxe_Twin.JPEG
+
+Deluxe_Queen|300|180|City view, Shower, private bathroom, Bathrobes, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 1 queen bed|Available|Deluxe_Queen.JPEG
+
+Deluxe Triple|350|200|City view, Shower, private bathroom, Bathrobes, Hair dryer, Toiletries, WI-FI[free], TV, Free instant coffee/Complimentary tea, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 1 queen bed and 1 single bed|Available|Deluxe_Triple.JPEG
+
+2 Bedroom Apartment|400|260|City view, Shower, 2 shared bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free bottled water, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 2 queen beds|Available|2Bedroom_Apartment.JPEG
+
+//IMAGE STILL HAVENT DONE FOR BELOW PART
+
+3 Bedroom Apartment|450|300|City view, Shower, 3 shared bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free bottled water, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 3 queen beds|Available|3Bedroom_Apartment.JPEG
+
+Junior Suite|500|180|City view, Shower, 2 private bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free bottled water, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 1 sofa bed and 1 queen bed|Available|Junior_Suite.JPEG
+
+//IMAGE STILL HAVENT DONE FOR BELOW PART
+
+Suite Apartment|550|340|City view, Shower, 3 private bathroom, Towels, Hair dryer, Toiletries, WI-FI[free], TV, Free bottled water, Electric kettle, Desk, Refrigerator, In-room safe box, individual air conditioning, Breakfast included, Parking, 3 king beds|Available|Suite_Apartment.JPEG
