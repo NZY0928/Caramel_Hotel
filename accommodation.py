@@ -1,16 +1,20 @@
+"""Caramel Hotel accommodation user interface.
+
+This module contains the Tkinter pages for browsing rooms, viewing details,
+entering booking information and viewing booking history. File handling,
+image utilities, room availability and mouse-wheel support are in
+booking_manager.py.
+"""
 
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-ROOM_FILE = BASE_DIR / "room.txt"
-BOOKING_FILE = BASE_DIR / "booking.txt"
-IMAGE_DIR = BASE_DIR / "room_images"
+from booking_manager import BookingManager
 
-# Colour palette
+
+# Colours used by the accommodation pages.
 BG = "#DFE2E5"
 NAVY = "#486B92"
 LAVENDER = "#9497B6"
@@ -23,14 +27,6 @@ MUTED = "#647588"
 BORDER = "#D0D9E0"
 PALE_CARD = "#F7F9FA"
 
-ROOM_FIELDS = (
-    "room_type", "room_number", "price_per_night", "features", "status", "image_filename",
-)
-
-BOOKING_FIELDS = (
-    "name", "email", "hp", "ic", "room_type", "room_number", "check_in", "check_out", "amount_of_room", "adults",
-    "children", "special_requests", "promo_code", "total_price", "payment_method", "status"
-)
 PAYMENT_METHODS = ("Credit/Debit Card", "E-wallet")
 EWALLET_PROVIDERS = ("Touch 'n Go eWallet", "GrabPay", "Boosts", "ShopeePay")
 
@@ -38,9 +34,10 @@ class AccommodationPage(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, bg=BG)
-        self._ensure_booking_file()
-        self.rooms = self._read_rooms()
-        self.bookings = self._read_bookings()
+        self.services = BookingManager(self)
+        self.services.ensure_booking_file()
+        self.rooms = self.services.read_rooms()
+        self.bookings = self.services.read_bookings()
         self.selected_room = None # Start with no room selected
         self.photo_refs = [] # Keep references to room images so Tkinter does not discard them
         self.detail_photo = None # Store the image shown in the selected room detail panel
@@ -55,7 +52,19 @@ class AccommodationPage(tk.Frame):
         self.payment_detail_frame = None
         self.payment_form_inner = None
         self.booking_form_canvas = None
-        self.current_canvas = None # Keeps track of the current canvas widget, likely for scrolling or updating the page
+        self._scroll_targets = [] # Canvases and tables that support mouse-wheel scrolling
+        self._mousewheel_binding_ids = []
+
+        # Listen for the mouse wheel anywhere inside this page, including over
+        # labels, entry fields, room cards, feature text and scrollbars.
+        wheel_bindings = (
+            ("<MouseWheel>", self.services.on_mousewheel),
+            ("<Button-4>", lambda event: self.services.on_linux_mousewheel(event, -1)),
+            ("<Button-5>", lambda event: self.services.on_linux_mousewheel(event, 1)),
+        )
+        for sequence, callback in wheel_bindings:
+            binding_id = self.bind_all(sequence, callback, add="+")
+            self._mousewheel_binding_ids.append((sequence, binding_id))
 
         self._setup_styles() # Sets up the styles for the widgets
         self._build_shell() # Creates the main layout of the page
@@ -63,127 +72,17 @@ class AccommodationPage(tk.Frame):
         if not self.rooms:
             self.after(200, self._show_missing_rooms_message)
 
-    # Data files        
-    def _read_rooms(self):
-        rooms = []
-        if not ROOM_FILE.exists():
-            return rooms
-        try:
-            with ROOM_FILE.open("r", encoding="utf-8-sig") as file:
-                for line in file:
-                    line = line.strip()
-                    if not line or line.startswith("#") or line.startswith("//"):
-                        continue
-                    parts = [part.strip() for part in line.split("|")]
-                    if len(parts) != len(ROOM_FIELDS):
-                        continue
-                    room = dict(zip(ROOM_FIELDS, parts))
-                    if room.get("room_type", "").strip().lower() == "room_type":
-                        continue
-                    try:
-                        room["price_per_night"] = float(room["price_per_night"])
-                    except (ValueError, TypeError):
-                        continue
-                    room["room_type"] = str(room.get("room_type", "")).strip()
-                    room["room_number"] = str(room.get("room_number", "")).strip()
-                    room["status"] = str(room.get("status", "")).strip().title()
-                    if room["room_type"] and room["room_number"]:
-                        rooms.append(room)
-        except OSError:
-            return []
-        return rooms
-
-    def _ensure_booking_file(self):
-        if not BOOKING_FILE.exists():
-            self._write_booking_file([])
-
-    def _write_booking_file(self, bookings):
-        lines = ["# Caramel Hotel booking records (stored locally)", "|".join(BOOKING_FIELDS)]
-        for booking in bookings:
-            lines.append("|".join(self._safe_field(booking.get(field, "")) for field in BOOKING_FIELDS))
-        try:
-            BOOKING_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        except OSError as error:
-            messagebox.showerror("File error", f"Could not write booking.txt:\n{error}", parent=self)  
-
-    def _read_bookings(self):
-        bookings = []
-        if not BOOKING_FILE.exists():
-            return bookings
-        try:
-            with BOOKING_FILE.open("r", encoding="utf-8-sig") as file:
-                for line in file:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    parts = [part.strip() for part in line.split("|")]
-                    if [part.lower() for part in parts] == list(BOOKING_FIELDS):
-                        continue
-                    # Ignore rows that do not match the current file format.
-                    if len(parts) != len(BOOKING_FIELDS):
-                        continue
-                    bookings.append(dict(zip(BOOKING_FIELDS, parts)))
-        except OSError:
-            return []
-        return bookings
-
-    @staticmethod # Safely format a field value for writing to the booking file
-    def _safe_field(value):
-        return str(value).replace("|", "/").replace("\r", " ").replace("\n", " ").strip()
-
-    def _append_booking(self, booking):
-        row = "|".join(self._safe_field(booking.get(field, "")) for field in BOOKING_FIELDS)
-        try:
-            with BOOKING_FILE.open("a", encoding="utf-8") as file:
-                file.write(row + "\n")
-            return True
-        except OSError as error:
-            messagebox.showerror("File error", f"Could not save booking.txt:\n{error}", parent=self)
-            return False
-
-    # Room Image support
-    def _room_image_path(self, room):
-        filename = str(room.get("image_filename", "")).strip()
-        if not filename:
-            return None
-        
-        folders = (IMAGE_DIR, BASE_DIR)
-        target = filename.casefold()
-        for folder in folders:
-            candidate = folder / filename
-            if candidate.is_file():
-                return candidate
-            if folder.is_dir():
+    def destroy(self):
+        """Remove this page's global mouse-wheel bindings when the page closes."""
+        for sequence, binding_id in getattr(self, "_mousewheel_binding_ids", []):
+            if binding_id:
                 try:
-                    for path in folder.iterdir():
-                        if path.is_file() and path.name.casefold() == target:
-                            return path
-                except OSError:
+                    self._root()._unbind(("bind", "all", sequence), binding_id)
+                except (tk.TclError, AttributeError):
                     pass
-        return None
+        self._mousewheel_binding_ids = []
+        super().destroy()
 
-    def _load_photo(self, room, size):
-        # Get the image path for the room and load it as a PhotoImage, resizing it to the specified size.
-        path = self._room_image_path(room)
-        if path is None:
-            return None
-        try:
-            from PIL import Image, ImageOps, ImageTk
-            image = Image.open(path).convert("RGB")
-            resampling = getattr(Image, "Resampling", Image)
-            resample_filter = getattr(resampling, "LANCZOS", getattr(Image, "LANCZOS", 3))
-            image = ImageOps.fit(image, size, method=resample_filter)
-            return ImageTk.PhotoImage(image)
-        except ImportError:
-            # Tkinter's PhotoImage can display PNG/GIF but not usually JPEG.
-            try:
-                return tk.PhotoImage(file=str(path))
-            except tk.TclError:
-                return None
-        except (OSError, ValueError, tk.TclError):
-            return None
-
-    # Page layout and widgets
     def _setup_styles(self):
         style = ttk.Style(self)
         try:
@@ -204,7 +103,7 @@ class AccommodationPage(tk.Frame):
                   selectforeground=[("readonly", TEXT)])
         style.configure("Hotel.TEntry", padding=(7, 7), font=("Arial", 11))
         style.configure("Hotel.TSpinbox", padding=(7, 7), font=("Arial", 11))
-        
+
     def _build_shell(self):
         header = tk.Frame(self, bg=BG)
         header.pack(fill="x", padx=22, pady=(16, 8))
@@ -243,7 +142,7 @@ class AccommodationPage(tk.Frame):
             child.destroy()
         self.photo_refs = []
         self.detail_photo = None
-        self._current_canvas = None
+        self._scroll_targets = []
         self.payment_detail_vars = {}
         self.payment_detail_frame = None
         self.booking_form_canvas = None
@@ -266,7 +165,6 @@ class AccommodationPage(tk.Frame):
                 parent=self,
             )
 
-    # Room gallery - photo are clickable
     def show_gallery(self):
         self._clear_content()
         self._set_navigation_state("gallery")
@@ -289,10 +187,7 @@ class AccommodationPage(tk.Frame):
         window_id = canvas.create_window((0, 0), window=card_grid, anchor="nw")
         card_grid.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window_id, width=event.width))
-        canvas.bind("<MouseWheel>", self._on_mousewheel)
-        canvas.bind("<Button-4>", lambda event: self._on_linux_mousewheel(event, -1))
-        canvas.bind("<Button-5>", lambda event: self._on_linux_mousewheel(event, 1))
-        self._current_canvas = canvas
+        self.services.register_scroll_target(canvas, scrollbar)
 
         # Three columns at the normal window width; cards expand with the window
         for column in range(3):
@@ -301,40 +196,44 @@ class AccommodationPage(tk.Frame):
             row, column = divmod(index, 3)
             self._build_room_card(card_grid, room, row, column)
 
-    def _on_mousewheel(self, event):
-        if self._current_canvas is None:
-            return
-        try:
-            if self._current_canvas.winfo_exists():
-                delta = int(-1 * (event.delta / 120))
-                if delta == 0 and event.delta:
-                    delta = -1 if event.delta > 0 else 1
-                self._current_canvas.yview_scroll(delta, "units")
-        except tk.TclError:
-            pass
-
-    def _on_linux_mousewheel(self, _event, direction):
-        if self._current_canvas is not None:
-            try:
-                if self._current_canvas.winfo_exists():
-                    self._current_canvas.yview_scroll(direction, "units")
-            except tk.TclError:
-                pass
-
     def _build_room_card(self, parent, room, row, column):
         shell = tk.Frame(parent, bg=BORDER, padx=1, pady=1)
         shell.grid(row=row, column=column, sticky="nsew", padx=8, pady=8)
         card = tk.Frame(shell, bg=WHITE)
         card.pack(fill="both", expand=True)
 
-        image_holder = tk.Frame(card, bg=PALE_BLUE, height=155, cursor="hand2")
+        # Room photo area. Resize after Tkinter has calculated the card's real width.
+        image_height = 180
+        image_holder = tk.Frame(card, bg=PALE_BLUE, height=image_height, cursor="hand2")
         image_holder.pack(fill="x")
         image_holder.pack_propagate(False)
-        photo = self._load_photo(room, (330, 155))
+
+        photo = self.services.load_photo(room, (330, image_height))
         if photo is not None:
             self.photo_refs.append(photo)
-            image_widget = tk.Label(image_holder, image=photo, bg=PALE_BLUE, cursor="hand2", bd=0)
+            image_widget = tk.Label(
+                image_holder, image=photo, bg=PALE_BLUE, cursor="hand2", bd=0
+            )
+            image_widget.image = photo
+            image_widget._photo_size = (330, image_height)
             image_widget.pack(fill="both", expand=True)
+
+            # Recalculate when Tkinter gives this card its final width.
+            image_holder.bind(
+                "<Configure>",
+                lambda event, selected=room, target=image_widget,
+                       holder=image_holder, h=image_height:
+                    self.services.schedule_gallery_photo_resize(selected, target, holder, h)
+            )
+            # Also resize once after the initial layout. Binding alone can miss
+            # the first size calculation on some Tkinter/Windows setups.
+            self.after_idle(
+                lambda selected=room, target=image_widget,
+                       holder=image_holder, h=image_height:
+                    self.services.resize_gallery_photo(
+                        selected, target, holder.winfo_width(), h
+                    )
+            )
         else:
             image_widget = tk.Frame(image_holder, bg=PALE_BLUE, cursor="hand2")
             image_widget.pack(fill="both", expand=True)
@@ -356,7 +255,7 @@ class AccommodationPage(tk.Frame):
                  bg="#E7EEF4" if status == "AVAILABLE" else "#F0E7E7",
                  fg=NAVY if status == "AVAILABLE" else "#8B5C64",
                  font=("Arial", 7, "bold"), padx=6, pady=4).pack(side="right", padx=(5, 0))
-        features = self._feature_list(room)
+        features = self.services.feature_list(room)
         short_features = "  ·  ".join(features[:3]) if features else "Room features on details page"
         tk.Label(body, text=short_features, bg=WHITE, fg=MUTED, font=("Arial", 8),
                  wraplength=310, justify="left", anchor="w", height=2).pack(anchor="w", fill="x")
@@ -379,135 +278,156 @@ class AccommodationPage(tk.Frame):
             if child is not bottom:
                 child.bind("<Button-1>", lambda _event, selected=room: self.show_details(selected))
 
-    @staticmethod
-    def _feature_list(room):
-        return [item.strip() for item in str(room.get("features", "")).split(",") if item.strip()]
-
-    @staticmethod
-    def _room_numbers_in_booking(booking):
-        """Return the physical room numbers stored in a booking record.
-
-        Multiple rooms are stored comma-separated in the existing room_number
-        field, for example "101, 150". Room numbers are used internally only;
-        they are not shown on the guest-facing pages.
-        """
-        value = str(booking.get("room_number", "")).strip()
-        return {number.strip() for number in value.split(",") if number.strip()}
-
-    def _is_reserved_for_dates(self, room_number, check_in, check_out, bookings=None):
-        if bookings is None:
-            bookings = self._read_bookings()
-        for booking in bookings:
-            status = str(booking.get("status", "")).strip().lower()
-            if status in ("cancelled", "canceled", "rejected"):
-                continue
-            if room_number not in self._room_numbers_in_booking(booking):
-                continue
-            try:
-                booked_in = datetime.strptime(booking["check_in"], "%Y-%m-%d").date()
-                booked_out = datetime.strptime(booking["check_out"], "%Y-%m-%d").date()
-            except (KeyError, ValueError):
-                continue
-            # A booking conflicts only when the date ranges overlap.
-            if check_in < booked_out and check_out > booked_in:
-                return True
-        return False
-
-    def _available_rooms_for_dates(self, selected_room, check_in, check_out):
-        bookings = self._read_bookings()
-        selected_type = str(selected_room.get("room_type", "")).strip().casefold()
-        available = []
-        for room in self.rooms:
-            if str(room.get("room_type", "")).strip().casefold() != selected_type:
-                continue
-            if str(room.get("status", "")).strip().lower() != "available":
-                continue
-            if not self._is_reserved_for_dates(room["room_number"], check_in, check_out, bookings):
-                available.append(room)
-        # Prefer the room the guest clicked, followed by the other matching rooms.
-        chosen_number = str(selected_room.get("room_number", ""))
-        available.sort(key=lambda item: (str(item.get("room_number", "")) != chosen_number,
-                                         str(item.get("room_number", ""))))
-        return available
-
-    # Separate room details page
     def show_details(self, room):
         self.selected_room = room
         self._clear_content()
         self._set_navigation_state("gallery")
 
+        # Keep the page heading and back button at the top.
         top = tk.Frame(self.content_area, bg=BG)
         top.pack(fill="x", pady=(0, 10))
-        self._make_button(top, "‹  Back to rooms", self.show_gallery, primary=False).pack(side="left")
+        self._make_button(top, "‹  Back to rooms", self.show_gallery,
+                          primary=False).pack(side="left")
         tk.Label(top, text="ROOM DETAILS", bg=BG, fg=NAVY,
                  font=("Arial", 10, "bold")).pack(side="right", pady=7)
 
+        # The detail card fills the available area. Its two columns are
+        # allowed to resize with the window instead of using fixed widths.
         card_shell = tk.Frame(self.content_area, bg=BORDER, padx=1, pady=1)
         card_shell.pack(fill="both", expand=True)
-        card = tk.Frame(card_shell, bg=WHITE, padx=18, pady=17)
+        card = tk.Frame(card_shell, bg=WHITE, padx=16, pady=14)
         card.pack(fill="both", expand=True)
-        card.grid_columnconfigure(0, weight=5, uniform="detail")
-        card.grid_columnconfigure(1, weight=6, uniform="detail")
+        card.grid_columnconfigure(0, weight=5, uniform="detail", minsize=0)
+        card.grid_columnconfigure(1, weight=6, uniform="detail", minsize=0)
         card.grid_rowconfigure(0, weight=1)
 
+        # Left column: responsive photo and status. Do not disable geometry
+        # propagation or set a fixed width; those were causing the overflow.
         left = tk.Frame(card, bg=WHITE)
-        left.grid(row=0, column=0, sticky="nsew", padx=(0, 18))
-        image_panel = tk.Frame(left, bg=PALE_BLUE, height=290)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 16))
+
+        initial_photo_width = 420
+        initial_photo_height = initial_photo_width // 2
+        image_panel = tk.Frame(left, bg=PALE_BLUE, height=initial_photo_height)
         image_panel.pack(fill="x")
         image_panel.pack_propagate(False)
-        self.detail_photo = self._load_photo(room, (460, 290))
-        if self.detail_photo:
-            tk.Label(image_panel, image=self.detail_photo, bg=PALE_BLUE, bd=0).pack(fill="both", expand=True)
+
+        self.detail_photo = self.services.load_photo(room, (initial_photo_width, initial_photo_height))
+        image_label = None
+        if self.detail_photo is not None:
+            image_label = tk.Label(image_panel, image=self.detail_photo, bg=PALE_BLUE, bd=0)
+            image_label.image = self.detail_photo
+            image_label._photo_size = (initial_photo_width, initial_photo_height)
+            image_label.pack(fill="both", expand=True)
         else:
             tk.Label(image_panel, text="✦", bg=PALE_BLUE, fg=SLATE_BLUE,
-                     font=("Arial", 42, "bold")).pack(pady=(75, 6))
+                     font=("Arial", 42, "bold")).pack(pady=(35, 6))
             tk.Label(image_panel, text="ROOM PHOTO", bg=PALE_BLUE, fg=NAVY,
                      font=("Arial", 11, "bold")).pack()
             tk.Label(image_panel, text="Put the photo in room_images", bg=PALE_BLUE,
-                     fg=MUTED, font=("Arial", 8), wraplength=380).pack(pady=5)
+                     fg=MUTED, font=("Arial", 8), wraplength=300).pack(pady=5)
+
         tk.Label(left, text=f"Status: {room['status']}",
                  bg=WHITE, fg=MUTED, font=("Arial", 10)).pack(anchor="w", pady=(10, 0))
         description = str(room.get("description", "")).strip()
         if description:
-            tk.Label(left, text=description, bg=WHITE, fg=MUTED, font=("Arial", 9),
-                     wraplength=420, justify="left").pack(anchor="w", pady=(5, 0))
-            
+            description_label = tk.Label(
+                left, text=description, bg=WHITE, fg=MUTED, font=("Arial", 9),
+                wraplength=400, justify="left", anchor="w"
+            )
+            description_label.pack(anchor="w", fill="x", pady=(5, 0))
+        else:
+            description_label = None
+
+        # Right column: content flows inside the width available in the card.
         right = tk.Frame(card, bg=WHITE)
         right.grid(row=0, column=1, sticky="nsew")
-        tk.Label(right, text=room["room_type"], bg=WHITE, fg=TEXT,
-                 font=("Arial", 20, "bold"), wraplength=450, justify="left").pack(anchor="w")
+        right.grid_columnconfigure(0, weight=1)
+
+        room_type_label = tk.Label(
+            right, text=room["room_type"], bg=WHITE, fg=TEXT,
+            font=("Arial", 20, "bold"), wraplength=420, justify="left", anchor="w"
+        )
+        room_type_label.grid(row=0, column=0, sticky="ew")
+
         price_row = tk.Frame(right, bg=WHITE)
-        price_row.pack(fill="x", pady=(7, 4))
+        price_row.grid(row=1, column=0, sticky="ew", pady=(7, 8))
         tk.Label(price_row, text=f"RM{room['price_per_night']:.2f}", bg=WHITE, fg=NAVY,
                  font=("Arial", 19, "bold")).pack(side="left")
         tk.Label(price_row, text="per room, per night", bg=WHITE, fg=MUTED,
-                 font=("Arial", 9)).pack(side="left", padx=(6, 0), pady=(7, 0))
-        tk.Label(right, text="Your room number will be provided when you check in.",
-                 bg="#EAF0F4", fg=NAVY, font=("Arial", 9, "bold"), padx=9, pady=8,
-                 anchor="w").pack(fill="x", pady=(2, 12))
+                 font=("Arial", 9)).pack(side="left", padx=(8, 0), pady=(7, 0))
+
+        room_number_notice = tk.Label(
+            right, text="Your room number will be provided when you check in.",
+            bg="#EAF0F4", fg=NAVY, font=("Arial", 9, "bold"), padx=9, pady=8,
+            anchor="w", justify="left", wraplength=420
+        )
+        room_number_notice.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+
         tk.Label(right, text="ROOM FEATURES", bg=WHITE, fg=NAVY,
-                 font=("Arial", 10, "bold")).pack(anchor="w", pady=(0, 6))
+                 font=("Arial", 10, "bold")).grid(row=3, column=0, sticky="nw", pady=(0, 6))
+
+        # Features use a separate expanding area, with a scrollbar if needed.
         features_outer = tk.Frame(right, bg=WHITE)
-        features_outer.pack(fill="both", expand=True)
-        features_canvas = tk.Canvas(features_outer, bg=WHITE, highlightthickness=0, height=210)
+        features_outer.grid(row=4, column=0, sticky="nsew")
+        right.grid_rowconfigure(4, weight=1)
+        features_outer.grid_rowconfigure(0, weight=1)
+        features_outer.grid_columnconfigure(0, weight=1)
+        features_canvas = tk.Canvas(features_outer, bg=WHITE, highlightthickness=0, bd=0)
         features_scroll = ttk.Scrollbar(features_outer, orient="vertical", command=features_canvas.yview)
         features_canvas.configure(yscrollcommand=features_scroll.set)
-        features_scroll.pack(side="right", fill="y")
-        features_canvas.pack(side="left", fill="both", expand=True)
+        features_canvas.grid(row=0, column=0, sticky="nsew")
+        features_scroll.grid(row=0, column=1, sticky="ns")
+        self.services.register_scroll_target(features_canvas, features_scroll)
         features_inner = tk.Frame(features_canvas, bg=WHITE)
         features_window = features_canvas.create_window((0, 0), window=features_inner, anchor="nw")
-        features_inner.bind("<Configure>", lambda _event: features_canvas.configure(scrollregion=features_canvas.bbox("all")))
-        features_canvas.bind("<Configure>", lambda event: features_canvas.itemconfigure(features_window, width=event.width))
-        for feature in self._feature_list(room):
+        features_inner.bind(
+            "<Configure>",
+            lambda _event: features_canvas.configure(scrollregion=features_canvas.bbox("all"))
+        )
+        features_canvas.bind(
+            "<Configure>",
+            lambda event: features_canvas.itemconfigure(features_window, width=event.width)
+        )
+        feature_labels = []
+        for feature in self.services.feature_list(room):
             line = tk.Frame(features_inner, bg=WHITE)
-            line.pack(fill="x", anchor="w", pady=2)
+            line.pack(fill="x", anchor="w", pady=3)
             tk.Label(line, text="✓", bg=WHITE, fg=SLATE_BLUE,
                      font=("Arial", 9, "bold")).pack(side="left", padx=(1, 8))
-            tk.Label(line, text=feature, bg=WHITE, fg=TEXT, font=("Arial", 9),
-                     wraplength=390, justify="left", anchor="w").pack(side="left", fill="x", expand=True)
+            feature_label = tk.Label(
+                line, text=feature, bg=WHITE, fg=TEXT, font=("Arial", 9),
+                wraplength=420, justify="left", anchor="w"
+            )
+            feature_label.pack(side="left", fill="x", expand=True)
+            feature_labels.append(feature_label)
 
+        # Resize wrapped text and the photo to the real column widths.
+        def resize_detail_text(event=None):
+            right_width = max(200, right.winfo_width() - 18)
+            room_type_label.configure(wraplength=right_width)
+            room_number_notice.configure(wraplength=right_width)
+            for label in feature_labels:
+                label.configure(wraplength=max(160, right_width - 24))
+            if description_label is not None:
+                description_label.configure(wraplength=max(180, left.winfo_width() - 8))
+
+        right.bind("<Configure>", resize_detail_text)
+        left.bind(
+            "<Configure>",
+            lambda event, selected=room, panel=image_panel, label=image_label:
+                self.services.resize_detail_photo(selected, panel, label, event.width)
+                if label is not None else None
+        )
+        if image_label is not None:
+            left.after_idle(
+                lambda selected=room, panel=image_panel, label=image_label, holder=left:
+                    self.services.resize_detail_photo(selected, panel, label, holder.winfo_width())
+            )
+
+        # Keep the action buttons at the bottom of the card.
         action = tk.Frame(card, bg=WHITE)
-        action.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(18, 0))
+        action.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(14, 0))
         tk.Label(action, text="Select your dates and room quantity on the next page.",
                  bg=WHITE, fg=MUTED, font=("Arial", 9)).pack(side="left")
         self._make_button(action, "Book this room  →", lambda selected=room: self.show_booking_form(selected),
@@ -515,7 +435,6 @@ class AccommodationPage(tk.Frame):
         self._make_button(action, "Back to rooms", self.show_gallery,
                           primary=False, padx=15, pady=10).pack(side="right", padx=(0, 8))
 
-    # Booking form
     def show_booking_form(self, room):
         self.selected_room = room
         self._clear_content()
@@ -544,7 +463,7 @@ class AccommodationPage(tk.Frame):
         img = tk.Frame(left, bg=PALE_BLUE, height=175)
         img.pack(fill="x")
         img.pack_propagate(False)
-        photo = self._load_photo(room, (390, 175))
+        photo = self.services.load_photo(room, (390, 175))
         if photo:
             self.photo_refs.append(photo)
             tk.Label(img, image=photo, bg=PALE_BLUE, bd=0).pack(fill="both", expand=True)
@@ -585,6 +504,7 @@ class AccommodationPage(tk.Frame):
         self.booking_form_canvas.configure(yscrollcommand=form_scroll.set)
         self.booking_form_canvas.grid(row=0, column=0, sticky="nsew")
         form_scroll.grid(row=0, column=1, sticky="ns")
+        self.services.register_scroll_target(self.booking_form_canvas, form_scroll)
         form = tk.Frame(self.booking_form_canvas, bg=WHITE)
         self.payment_form_inner = form
         form_window = self.booking_form_canvas.create_window((0, 0), window=form, anchor="nw")
@@ -592,20 +512,22 @@ class AccommodationPage(tk.Frame):
             scrollregion=self.booking_form_canvas.bbox("all")))
         self.booking_form_canvas.bind("<Configure>", lambda event: self.booking_form_canvas.itemconfigure(
             form_window, width=event.width))
-        self.booking_form_canvas.bind("<MouseWheel>", self._on_booking_form_mousewheel)
 
         form.grid_columnconfigure(1, weight=1)
         self.form_vars = {}
+        # If guests started with the homepage search bar, prefill the same
+        # dates and guest/room counts after they select a room.
+        home_search = getattr(self, "home_booking_search", {}) or {}
         fields = [
             ("name", "Full name", ""),
             ("email", "Email address", ""),
             ("hp", "Phone number", ""),
             ("ic", "IC / Passport", ""),
-            ("check_in", "Check-in (YYYY-MM-DD)", date.today().isoformat()),
-            ("check_out", "Check-out (YYYY-MM-DD)", (date.today() + timedelta(days=1)).isoformat()),
-            ("adults", "Adults", "1"),
-            ("children", "Children", "0"),
-            ("amount_of_room", "Amount of rooms", "1"),
+            ("check_in", "Check-in (YYYY-MM-DD)", home_search.get("check_in", date.today().isoformat())),
+            ("check_out", "Check-out (YYYY-MM-DD)", home_search.get("check_out", (date.today() + timedelta(days=1)).isoformat())),
+            ("adults", "Adults", home_search.get("adults", "1")),
+            ("children", "Children", home_search.get("children", "0")),
+            ("amount_of_room", "Amount of rooms", home_search.get("amount_of_room", "1")),
             ("special_requests", "Special requests (optional)", ""),
             ("promo_code", "Promo code (optional)", ""),
         ]
@@ -655,16 +577,9 @@ class AccommodationPage(tk.Frame):
         self._make_button(buttons, "Cancel", lambda selected=room: self.show_details(selected),
                           primary=False, padx=14, pady=9).pack(side="right", padx=(0, 8))
 
-        for key in ("check_in", "check_out", "amount_of_room"):
+        for key in ("check_in", "check_out", "amount_of_room", "promo_code"):
             self.form_vars[key].trace_add("write", lambda *_args: self._refresh_booking_total())
         self._refresh_booking_total()
-
-    def _on_booking_form_mousewheel(self, event):
-        if self.booking_form_canvas is not None:
-            try:
-                self.booking_form_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            except (tk.TclError, ZeroDivisionError):
-                pass
 
     def _on_payment_method_change(self, _event=None):
         if self.payment_detail_frame is None:
@@ -715,6 +630,7 @@ class AccommodationPage(tk.Frame):
         if self.payment_form_inner is not None and self.booking_form_canvas is not None:
             self.payment_form_inner.update_idletasks()
             self.booking_form_canvas.configure(scrollregion=self.booking_form_canvas.bbox("all"))
+
     def _validate_payment_details(self):
         method = self.payment_var.get().strip() if self.payment_var else ""
         if method not in PAYMENT_METHODS:
@@ -741,7 +657,7 @@ class AccommodationPage(tk.Frame):
                 return False
         return True
 
-    # Dates, quantity and estimates
+
     def _parse_dates(self, show_errors=True):
         try:
             check_in = datetime.strptime(self.form_vars["check_in"].get().strip(), "%Y-%m-%d").date()
@@ -759,6 +675,8 @@ class AccommodationPage(tk.Frame):
                 messagebox.showerror("Invalid check-out", "Check-out must be later than check-in.", parent=self)
             return None
         return check_in, check_out
+
+
 
     def _refresh_booking_total(self):
         if self.total_var is None or self.selected_room is None:
@@ -778,7 +696,7 @@ class AccommodationPage(tk.Frame):
         except (ValueError, AttributeError):
             self.total_var.set("Estimated total: enter room quantity")
             return
-        available_rooms = self._available_rooms_for_dates(self.selected_room, check_in, check_out)
+        available_rooms = self.services.available_rooms_for_dates(self.selected_room, check_in, check_out)
         available_count = len(available_rooms)
         if self.availability_var is not None:
             self.availability_var.set(
@@ -786,6 +704,7 @@ class AccommodationPage(tk.Frame):
             )
         total = self.selected_room["price_per_night"] * nights * quantity
         self.total_var.set(f"Estimated total: RM{total:.2f}  ·  {nights} night(s)  ·  {quantity} room(s)")
+
 
     def _handle_confirm_booking(self):
         """Run booking confirmation and show unexpected errors to the user."""
@@ -802,7 +721,6 @@ class AccommodationPage(tk.Frame):
                 parent=self.winfo_toplevel(),
             )
 
-    # Confirm booking: reserve physical room inventory internally, do not show numbers of guests
     def _confirm_booking(self):
         room = self.selected_room
         if room is None:
@@ -819,7 +737,7 @@ class AccommodationPage(tk.Frame):
         except (ValueError, KeyError):
             messagebox.showerror("Invalid room quantity", "Enter a whole number of rooms (at least 1).", parent=self)
             return
-        available_rooms = self._available_rooms_for_dates(room, check_in, check_out)
+        available_rooms = self.services.available_rooms_for_dates(room, check_in, check_out)
         if len(available_rooms) < quantity:
             messagebox.showerror(
                 "Not enough rooms available",
@@ -874,9 +792,9 @@ class AccommodationPage(tk.Frame):
             "payment_method": self.payment_var.get().strip(),
             "status": "Confirmed",
         }
-        if not self._append_booking(booking):
+        if not self.services.append_booking(booking):
             return
-        self.bookings = self._read_bookings()
+        self.bookings = self.services.read_bookings()
         # Do not display the assigned room number until check-in.
         # Payment details are never saved in booking.txt.
         messagebox.showinfo(
@@ -891,11 +809,11 @@ class AccommodationPage(tk.Frame):
         )
         self.show_history()
 
-        # Booking history
+
     def show_history(self):
         self._clear_content()
         self._set_navigation_state("history")
-        self.bookings = self._read_bookings()
+        self.bookings = self.services.read_bookings()
 
         top = tk.Frame(self.content_area, bg=BG)
         top.pack(fill="x", pady=(0, 10))
@@ -933,6 +851,7 @@ class AccommodationPage(tk.Frame):
         ybar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
         xbar = ttk.Scrollbar(table_frame, orient="horizontal", command=tree.xview)
         tree.configure(yscrollcommand=ybar.set, xscrollcommand=xbar.set)
+        self.services.register_scroll_target(tree, ybar)
         tree.grid(row=0, column=0, sticky="nsew")
         ybar.grid(row=0, column=1, sticky="ns")
         xbar.grid(row=1, column=0, sticky="ew")
@@ -964,14 +883,3 @@ class AccommodationPage(tk.Frame):
                      font=("Arial", 14, "bold")).pack(pady=(0, 5))
             tk.Label(empty_state, text="Your confirmed bookings will be saved to booking.txt and appear here.",
                      bg=WHITE, fg=MUTED, font=("Arial", 10)).pack()
-
-
-# Run this file directly to test the accommodation page by itself.
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Caramel Hotel - Accommodation")
-    root.geometry("1180x780")
-    root.minsize(980, 640)
-    page = AccommodationPage(root)
-    page.pack(fill="both", expand=True)
-    root.mainloop()
