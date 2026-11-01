@@ -1,0 +1,2 @@
+# 
+name|email|hp|ic|room_type|room_number|check_in|check_out|amount_of_room|adults|children|special_requests|promo_code|total_price|payment_method|status
