@@ -24,7 +24,7 @@ menu_dict = {
     "J03": {"Name": "Japanese Curry Rice", "Category": "Japanese", "Price": 24.00, "Image": "J03.jpg"},
     "J04": {"Name": "Karaage Rice", "Category": "Japanese", "Price": 24.00, "Image": "J04.jpg"},
     "J05": {"Name": "Chashu Ramen", "Category": "Japanese", "Price": 22.70, "Image": "J05.jpg"},
-    "J06": {"Name": "Zaru Soba", "Category": "Japanese", "Price": 19.00, "Image": "J06jpg"},
+    "J06": {"Name": "Zaru Soba", "Category": "Japanese", "Price": 19.00, "Image": "J06.jpg"},
     "C01": {"Name": "Sweet And Sour Chicken Rice", "Category": "Chinese", "Price": 18.00, "Image": "C01.jpg"},
     "C02": {"Name": "Mapo Tofu Rice", "Category": "Chinese", "Price": 16.00, "Image": "C02.jpg"},
     "C03": {"Name": "Chinese Fried Rice", "Category": "Chinese", "Price": 15.00, "Image": "C03.jpg"},

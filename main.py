@@ -3,6 +3,8 @@
 The Accommodation page is loaded from accommodation.py.
 pack(), grid(), and place() arrange widgets on the screen."""
 # The main module is exempt from the assignment function-count limit.
+# parent = the main content area from main.py.
+import ast
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -120,10 +122,10 @@ class HotelApp(tk.Tk):
 
         self.button_frame = tk.Frame(self.nav_frame, bg=self.NAV_COLOUR)
         self.button_frame.pack(side="right", padx=(8, 34), pady=8)
-        # This list holds the labels for the seven navigation buttons.
+        # These are the main pages available from the shared navigation bar.
         self.pages = [
             "Home", "Accommodation", "Menu", "Facility",
-            "Promotions", "Gallery", "Contact Us"
+            "Promotions", "Gallery", "Contact Us", "Login"
         ]
         self.nav_buttons = {}
         # The loop makes one button for each page name, avoiding repeated code.
@@ -177,6 +179,8 @@ class HotelApp(tk.Tk):
             self._build_contact_page()
         elif page == "Menu":
             self._build_menu_page()
+        elif page == "Login":
+            self._build_staff_page()
 
     # Load AccommodationPage from accommodation.py only when Accommodation is opened.
     # The try/except block shows a message if the separate module cannot be loaded.
@@ -694,12 +698,48 @@ class HotelApp(tk.Tk):
             wraplength=540, justify="left"
         ).pack(anchor="w", pady=(5, 14))
 
-        # Each tuple stores the food image filename, label, price and description.
-        food_items = [
-            ("home_food_salmon.png", "Grilled Salmon", "RM 32.00", "Fresh salmon served with seasonal herbs."),
-            ("home_food_pasta.png", "Truffle Mushroom Pasta", "RM 28.00", "Creamy pasta with mushrooms."),
-            ("Chocolate_Lava_Cake.png", "Chocolate Lava Cake", "RM 18.00", "Warm chocolate cake with a molten centre."),
+        # Read the featured dishes from menu.txt so the homepage uses the
+        # actual food names, prices and image filenames from the restaurant menu.
+        featured_ids = ("W01", "T01", "D01")
+        featured_descriptions = {
+            "W01": "A featured dish from our Western selection.",
+            "T01": "A popular choice from our Thai selection.",
+            "D01": "A sweet finish from our dessert selection.",
+        }
+        fallback_food_items = [
+            ("w01.jpg", "Grilled Salmon", "RM 25.00", featured_descriptions["W01"]),
+            ("T01.jpg", "Pad Thai", "RM 16.00", featured_descriptions["T01"]),
+            ("D01.jpg", "Chocolate Lava Cake", "RM 7.00", featured_descriptions["D01"]),
         ]
+        food_items = []
+        menu_file = BASE_DIR / "menu.txt"
+        try:
+            menu_source = menu_file.read_text(encoding="utf-8-sig")
+            menu_tree = ast.parse(menu_source, filename=str(menu_file))
+            menu_assignment = next(
+                node.value for node in menu_tree.body
+                if isinstance(node, ast.Assign)
+                and any(
+                    isinstance(target, ast.Name) and target.id == "menu_dict"
+                    for target in node.targets
+                )
+            )
+            menu_data = ast.literal_eval(menu_assignment)
+            for item_id in featured_ids:
+                item = menu_data.get(item_id)
+                if not isinstance(item, dict):
+                    continue
+                food_items.append((
+                    str(item.get("Image", "")).strip(),
+                    str(item.get("Name", "")).strip(),
+                    f"RM {float(item.get('Price', 0)):.2f}",
+                    featured_descriptions[item_id],
+                ))
+            if len(food_items) != len(featured_ids):
+                food_items = fallback_food_items
+        except (OSError, SyntaxError, ValueError, StopIteration, TypeError):
+            # Keep the homepage display available if menu.txt cannot be read.
+            food_items = fallback_food_items
         food_grid = tk.Frame(dining_left, bg=self.WHITE_COLOUR)
         food_grid.pack(fill="x")
         for column in range(3):
@@ -840,6 +880,7 @@ class HotelApp(tk.Tk):
                 ),
                 "detail": "Cardio equipment  ·  Strength training  ·  Stretching area",
                 "hours": "Open 24 hours for hotel guests",
+                "location": "Within Caramel Hotel — please ask the front desk for directions",
                 "image": "Fitness_Centre.png",
                 "image_side": "left",
             },
@@ -853,20 +894,22 @@ class HotelApp(tk.Tk):
                 ),
                 "detail": "Outdoor pool  ·  Poolside seating  ·  Towels provided",
                 "hours": "Open daily, 7:00 AM – 10:00 PM",
+                "location": "Within Caramel Hotel — please ask the front desk for directions",
                 "image": "pool.png",
                 "image_side": "right",
             },
             {
                 "number": "03",
                 "eyebrow": "RESTORE YOUR BALANCE",
-                "title": "Spa & Wellness",
+                "title": "Sauna & Steam",
                 "description": (
-                    "Take a pause from the pace of the day in a calming wellness setting. "
-                    "Enjoy a peaceful atmosphere designed for rest and relaxation. "
-                    "Advance booking is recommended for treatments."
+                    "Unwind in a relaxing sauna and steam room after a busy day. "
+                    "The warm atmosphere is designed to help guests slow down and refresh. "
+                    "Please contact the front desk for access and availability."
                 ),
-                "detail": "Relaxation treatments  ·  Quiet atmosphere  ·  Advance booking recommended",
+                "detail": "Sauna  ·  Steam room  ·  Relaxation area",
                 "hours": "Please contact the front desk for availability",
+                "location": "Within Caramel Hotel — please ask the front desk for directions",
                 "image": "spa.png",
                 "image_side": "left",
             },
@@ -954,6 +997,11 @@ class HotelApp(tk.Tk):
                 fg=self.NAV_COLOUR, font=("Arial", 9, "bold"),
                 anchor="w", justify="left", wraplength=390
             ).pack(anchor="w", fill="x")
+            tk.Label(
+                text_panel, text=f"Location: {facility['location']}", bg=text_panel["bg"],
+                fg=self.MUTED_COLOUR, font=("Arial", 8),
+                anchor="w", justify="left", wraplength=390
+            ).pack(anchor="w", fill="x", pady=(5, 0))
 
         # Closing call-to-action like the direct-booking links on hotel websites.
         closing = tk.Frame(body, bg=self.NAV_COLOUR, padx=24, pady=23)
@@ -996,7 +1044,7 @@ class HotelApp(tk.Tk):
                 "points": [
                     "Valid for all room types",
                     "Excludes public holidays",
-                    "Book directly for the best rate",
+                    "Use promo code LONGSTAY15 at booking",
                 ],
                 "note": "More time to unwind. More moments to enjoy.",
                 "image": "Long_Stay_Discount.png",
@@ -1009,7 +1057,7 @@ class HotelApp(tk.Tk):
                 "points": [
                     "Valid Friday to Sunday",
                     "Subject to availability",
-                    "Ideal for a relaxing short break",
+                    "Use promo code WEEKEND20 at booking",
                 ],
                 "note": "A refreshing escape without going too far.",
                 "image": "pool.png",
@@ -1324,6 +1372,12 @@ class HotelApp(tk.Tk):
                                highlightthickness=0)
         email_entry.pack(fill="x", pady=(2, 10), ipady=4)
 
+        tk.Label(form_card, text="Mobile (include country code)", font=("Helvetica", 11),
+                 fg=self.TEXT_COLOUR, bg=self.WHITE_COLOUR, anchor="w").pack(fill="x")
+        mobile_entry = tk.Entry(form_card, font=("Helvetica", 11), relief="solid", borderwidth=1,
+                                highlightthickness=0)
+        mobile_entry.pack(fill="x", pady=(2, 10), ipady=4)
+
         tk.Label(form_card, text="Message", font=("Helvetica", 11), fg=self.TEXT_COLOUR,
                  bg=self.WHITE_COLOUR, anchor="w").pack(fill="x")
         message_text = tk.Text(form_card, font=("Helvetica", 11), height=5,
@@ -1338,12 +1392,15 @@ class HotelApp(tk.Tk):
         def submit_message():
             name = name_entry.get().strip()
             email = email_entry.get().strip()
+            mobile = mobile_entry.get().strip()
             message = message_text.get("1.0", "end").strip()
 
-            if not name or not email or not message:
+            if not name or not email or not mobile or not message:
                 status.config(text="Please fill in all fields.", fg="#B23A48")
             elif "@" not in email or "." not in email.split("@")[-1]:
                 status.config(text="Please enter a valid email address.", fg="#B23A48")
+            elif len("".join(character for character in mobile if character.isdigit())) < 7:
+                status.config(text="Please enter a valid mobile number with country code.", fg="#B23A48")
             else:
                 # Add a date and time so the hotel staff can tell when the message arrived.
                 submitted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1356,6 +1413,7 @@ class HotelApp(tk.Tk):
                             f"Date: {submitted_at}\n"
                             f"Name: {name}\n"
                             f"Email: {email}\n"
+                            f"Mobile: {mobile}\n"
                             f"Message:\n{message}\n"
                             f"{'-' * 50}\n"
                         )
@@ -1372,7 +1430,10 @@ class HotelApp(tk.Tk):
                     )
                     name_entry.delete(0, "end")
                     email_entry.delete(0, "end")
+                    mobile_entry.delete(0, "end")
                     message_text.delete("1.0", "end")
+                    # Stage 1 specifies returning to the Home page after submitting a message.
+                    self.after(1200, lambda: self.show_page("Home"))
 
             if not status.winfo_ismapped():
                 status.pack(pady=(4, 0))
@@ -1383,23 +1444,42 @@ class HotelApp(tk.Tk):
             activebackground=self.ACTIVE_COLOUR, activeforeground=self.WHITE_COLOUR,
             font=("Arial", 11), padx=18, pady=6, cursor="hand2"
         ).pack(pady=(0, 6))
+        tk.Button(
+            form_card, text="Back to Home", command=lambda: self.show_page("Home"),
+            bg=self.WHITE_COLOUR, fg=self.NAV_COLOUR, relief="solid",
+            activebackground=self.SECONDARY_COLOUR, font=("Arial", 10),
+            padx=16, pady=6, cursor="hand2",
+        ).pack(pady=(0, 2))
 
     # Menu page
-    # Load RestaurantPage from menu.py only when menu is opened.
-    # The try/except block shows a message if the separate module cannot be loaded.
+    # Load RestaurantPage from restaurant.py only when Menu is selected.
     def _build_menu_page(self):
-        # restaurant.py has not been provided in the attached files yet.
         try:
-            # Import the Menu page only when needed; restaurant.py must define RestaurantPage.
             from restaurant import RestaurantPage
             page = RestaurantPage(self.content_frame)
             page.pack(fill="both", expand=True)
-        except (ImportError, AttributeError):
+        except Exception as error:
             self._show_message_page(
                 "Menu",
-                "The restaurant/menu page has not been connected yet.\n\n"
-                "When restaurant.py is ready, make sure it contains a RestaurantPage class "
-                "that inherits from tk.Frame, then place it beside main.py."
+                "The restaurant page could not be opened.\n\n"
+                "Check that restaurant.py, menu.txt, and the images folder are "
+                "in the project folder. Pillow is also required for the food photos.\n\n"
+                f"Details: {error}"
+            )
+
+    # Login page for Staff
+    # The staff login and portal are embedded in the same main window.
+    def _build_staff_page(self):
+        try:
+            from staff import StaffPage
+            page = StaffPage(self.content_frame)
+            page.pack(fill="both", expand=True)
+        except Exception as error:
+            self._show_message_page(
+                "Login",
+                "The staff portal could not be opened.\n\n"
+                "Make sure staff.py is in the same folder as main.py.\n\n"
+                f"Details: {error}"
             )
 
 # Python runs this block only when this file is launched directly. It creates the app and starts

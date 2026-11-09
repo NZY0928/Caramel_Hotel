@@ -1,0 +1,112 @@
+[
+    {
+        "order_id": "ORD-00006",
+        "date": "2026-11-07 14:43:34",
+        "customer": "Athena",
+        "dining": "Restaurant dining",
+        "location": "77",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "W02",
+                "name": "Fish And Chips",
+                "quantity": 10,
+                "description": "",
+                "price": "20.0",
+                "item_total": "200.0"
+            }
+        ],
+        "subtotal": "200.00",
+        "tax_rate": "0.06",
+        "tax": "12.00",
+        "service_charge_rate": "0.10",
+        "service_charge": "20.00",
+        "total": "232.00",
+        "payment_status": "Paid",
+        "status": "Left",
+        "paid_at": "2026-11-07 14:47:08",
+        "left_at": "2026-11-07 14:47:11"
+    },
+    {
+        "order_id": "ORD-00007",
+        "date": "2026-11-07 16:02:37",
+        "customer": "Yi Xuan",
+        "dining": "Restaurant dining",
+        "location": "67",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "A02",
+                "name": "Chicken Popcorn",
+                "quantity": 5,
+                "description": "",
+                "price": "9.0",
+                "item_total": "45.0"
+            }
+        ],
+        "subtotal": "45.00",
+        "tax_rate": "0.06",
+        "tax": "2.70",
+        "service_charge_rate": "0.10",
+        "service_charge": "4.50",
+        "total": "52.20",
+        "payment_status": "Paid",
+        "status": "Left",
+        "paid_at": "2026-11-07 16:25:44",
+        "left_at": "2026-11-07 16:25:49"
+    },
+    {
+        "order_id": "ORD-00008",
+        "date": "2026-11-07 16:04:25",
+        "customer": "Tan Yuam",
+        "dining": "Restaurant dining",
+        "location": "1",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "A03",
+                "name": "French Fries",
+                "quantity": 5,
+                "description": "",
+                "price": "7.0",
+                "item_total": "35.0"
+            }
+        ],
+        "subtotal": "35.00",
+        "tax_rate": "0.06",
+        "tax": "2.10",
+        "service_charge_rate": "0.10",
+        "service_charge": "3.50",
+        "total": "40.60",
+        "payment_status": "Paid",
+        "status": "Left",
+        "paid_at": "2026-11-07 16:37:04",
+        "left_at": "2026-11-07 16:37:10"
+    },
+    {
+        "order_id": "ORD-00009",
+        "date": "2026-11-07 20:52:44",
+        "customer": "Valerie",
+        "dining": "Restaurant dining",
+        "location": "11",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "A03",
+                "name": "French Fries",
+                "quantity": 50,
+                "description": "",
+                "price": "7.0",
+                "item_total": "350.0"
+            }
+        ],
+        "subtotal": "350.00",
+        "tax_rate": "0.06",
+        "tax": "21.00",
+        "service_charge_rate": "0.10",
+        "service_charge": "35.00",
+        "total": "406.00",
+        "payment_status": "Pending",
+        "status": "Eating"
+    }
+]

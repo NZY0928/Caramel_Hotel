@@ -1,6 +1,5 @@
-# 
+# Caramel Hotel booking records (stored locally)
 name|email|hp|ic|room_type|room_number|check_in|check_out|amount_of_room|adults|children|special_requests|promo_code|total_price|payment_method|status
 Ng Zhi Ying|zi852270@gmail.com|01139263616|080928130770|Superior Twin|101|2026-10-25|2026-10-26|1|1|0|||160.00|E-wallet|Confirmed
-amymy|ammmmm@gmail.com|4444444|44444444444|Superior Triple|200|2026-10-25|2026-10-26|1|1|0|||200.00|E-wallet|Confirmed
-amyyy|amyyy@gmail.com|11111111|444444444|Superior Queen|150|2026-10-26|2026-10-27|1|1|0|||160.00|Credit/Debit Card|Confirmed
-HEHEHE|hehehe@gmail.com|01121114544|551684152|Superior Triple|200|2026-11-01|2026-11-02|1|1|0|||200.00|E-wallet|Confirmed
+Amy|amy@amy.com|1234567890|1234567890098765|Superior Twin|101|2026-11-07|2026-11-08|1|1|0|||160.00|E-wallet|Checked Out
+Valerie|val@val.com|123456789098|12345678765432|Deluxe_Queen|301|2026-11-07|2026-11-25|1|1|0||LONGSTAY15|2754.00|E-wallet|Checked In

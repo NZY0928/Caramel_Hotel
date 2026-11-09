@@ -1,18 +1,9 @@
-"""Caramel Hotel accommodation user interface.
-
-This module contains the Tkinter pages for browsing rooms, viewing details,
-entering booking information and viewing booking history. File handling,
-image utilities, room availability and mouse-wheel support are in
-booking_manager.py.
-"""
-
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime, timedelta
 
 from booking_manager import BookingManager
-
 
 # Colours used by the accommodation pages.
 BG = "#DFE2E5"
@@ -32,6 +23,7 @@ EWALLET_PROVIDERS = ("Touch 'n Go eWallet", "GrabPay", "Boosts", "ShopeePay")
 
 class AccommodationPage(tk.Frame):
 
+    # Set up the Accommodation page and display the room gallery.
     def __init__(self, parent):
         super().__init__(parent, bg=BG)
         self.services = BookingManager(self)
@@ -72,8 +64,9 @@ class AccommodationPage(tk.Frame):
         if not self.rooms:
             self.after(200, self._show_missing_rooms_message)
 
+    # Remove the mouse-wheel events when the Accommodation page is closed.
     def destroy(self):
-        """Remove this page's global mouse-wheel bindings when the page closes."""
+        # Remove this page's global mouse-wheel bindings when the page closes.
         for sequence, binding_id in getattr(self, "_mousewheel_binding_ids", []):
             if binding_id:
                 try:
@@ -83,6 +76,7 @@ class AccommodationPage(tk.Frame):
         self._mousewheel_binding_ids = []
         super().destroy()
 
+    # Set the appearance of the tables, entry boxes and dropdown lists.
     def _setup_styles(self):
         style = ttk.Style(self)
         try:
@@ -104,6 +98,7 @@ class AccommodationPage(tk.Frame):
         style.configure("Hotel.TEntry", padding=(7, 7), font=("Arial", 11))
         style.configure("Hotel.TSpinbox", padding=(7, 7), font=("Arial", 11))
 
+    # Create the Accommodation heading, page buttons and content area.
     def _build_shell(self):
         header = tk.Frame(self, bg=BG)
         header.pack(fill="x", padx=22, pady=(16, 8))
@@ -126,6 +121,7 @@ class AccommodationPage(tk.Frame):
         self.content_area = tk.Frame(self, bg=BG)
         self.content_area.pack(fill="both", expand=True, padx=18, pady=(4, 16))
 
+    # Create a button using the Caramel Hotel colour palette.
     def _make_button(self, parent, text, command, primary=True, **kwargs):
         bg = NAVY if primary else PALE_BLUE
         fg = WHITE if primary else NAVY
@@ -137,6 +133,7 @@ class AccommodationPage(tk.Frame):
             highlightthickness=0, padx=kwargs.get("padx", 12), pady=kwargs.get("pady", 7)
         )
 
+    # Clear the current Accommodation screen before showing another one.
     def _clear_content(self):
         for child in self.content_area.winfo_children():
             child.destroy()
@@ -149,6 +146,7 @@ class AccommodationPage(tk.Frame):
         self.payment_var = None
         self.quantity_spinbox = None
 
+    # Highlight the selected Accommodation page button.
     def _set_navigation_state(self, selected):
         if selected == "gallery":
             self.gallery_button.config(bg=NAVY, fg=WHITE)
@@ -157,6 +155,7 @@ class AccommodationPage(tk.Frame):
             self.gallery_button.config(bg=PALE_BLUE, fg=NAVY)
             self.history_button.config(bg=PALE_BLUE, fg=NAVY)
 
+    # Show a warning when room.txt does not contain room records.
     def _show_missing_rooms_message(self):
         if self.winfo_exists():
             messagebox.showwarning(
@@ -165,6 +164,7 @@ class AccommodationPage(tk.Frame):
                 parent=self,
             )
 
+    # Display the available rooms as a gallery of room cards.
     def show_gallery(self):
         self._clear_content()
         self._set_navigation_state("gallery")
@@ -173,7 +173,10 @@ class AccommodationPage(tk.Frame):
         intro.pack(fill="x", padx=4, pady=(0, 10))
         tk.Label(intro, text="Choose your room", bg=BG, fg=TEXT,
                  font=("Arial", 15, "bold")).pack(side="left")
-        tk.Label(intro, text=f"{len(self.rooms)} rooms listed · Click a photo to view details",
+        room_types = {}
+        for room in self.rooms:
+            room_types.setdefault(room["room_type"].casefold(), room)
+        tk.Label(intro, text=f"{len(room_types)} room types · {len(self.rooms)} rooms in total · Click a photo to view details",
                  bg=BG, fg=MUTED, font=("Arial", 9)).pack(side="right", pady=(4, 0))
 
         outer = tk.Frame(self.content_area, bg=BG)
@@ -192,10 +195,13 @@ class AccommodationPage(tk.Frame):
         # Three columns at the normal window width; cards expand with the window
         for column in range(3):
             card_grid.grid_columnconfigure(column, weight=1, uniform="room_cards")
-        for index, room in enumerate(self.rooms):
+        # Show one room card per room type, while keeping all 50 physical
+        # room records available to the booking and availability checks.
+        for index, room in enumerate(room_types.values()):
             row, column = divmod(index, 3)
             self._build_room_card(card_grid, room, row, column)
 
+    # Create one room card with its photo, room type and price.
     def _build_room_card(self, parent, room, row, column):
         shell = tk.Frame(parent, bg=BORDER, padx=1, pady=1)
         shell.grid(row=row, column=column, sticky="nsew", padx=8, pady=8)
@@ -250,7 +256,12 @@ class AccommodationPage(tk.Frame):
         top_line.pack(fill="x")
         tk.Label(top_line, text=room["room_type"], bg=WHITE, fg=TEXT,
                  font=("Arial", 12, "bold"), anchor="w").pack(side="left", fill="x", expand=True)
-        status = room["status"].upper()
+        room_type_rooms = [item for item in self.rooms
+                           if item["room_type"].casefold() == room["room_type"].casefold()]
+        available_tonight = self.services.available_rooms_for_dates(
+            room, date.today(), date.today() + timedelta(days=1)
+        )
+        status = "AVAILABLE" if available_tonight else "UNAVAILABLE"
         tk.Label(top_line, text=status,
                  bg="#E7EEF4" if status == "AVAILABLE" else "#F0E7E7",
                  fg=NAVY if status == "AVAILABLE" else "#8B5C64",
@@ -259,6 +270,8 @@ class AccommodationPage(tk.Frame):
         short_features = "  ·  ".join(features[:3]) if features else "Room features on details page"
         tk.Label(body, text=short_features, bg=WHITE, fg=MUTED, font=("Arial", 8),
                  wraplength=310, justify="left", anchor="w", height=2).pack(anchor="w", fill="x")
+        tk.Label(body, text=f"{len(room_type_rooms)} rooms in this room type",
+                 bg=WHITE, fg=NAVY, font=("Arial", 8, "bold"), anchor="w").pack(anchor="w", pady=(4, 0))
 
         bottom = tk.Frame(body, bg=WHITE)
         bottom.pack(fill="x", pady=(9, 0))
@@ -278,6 +291,7 @@ class AccommodationPage(tk.Frame):
             if child is not bottom:
                 child.bind("<Button-1>", lambda _event, selected=room: self.show_details(selected))
 
+    # Display the details and features of the selected room.
     def show_details(self, room):
         self.selected_room = room
         self._clear_content()
@@ -327,7 +341,13 @@ class AccommodationPage(tk.Frame):
             tk.Label(image_panel, text="Put the photo in room_images", bg=PALE_BLUE,
                      fg=MUTED, font=("Arial", 8), wraplength=300).pack(pady=5)
 
-        tk.Label(left, text=f"Status: {room['status']}",
+        # Show live room-type availability for tonight; the booking form checks
+        # the exact dates selected by the customer.
+        available_tonight = self.services.available_rooms_for_dates(
+            room, date.today(), date.today() + timedelta(days=1)
+        )
+        status_text = "Available" if available_tonight else "Unavailable"
+        tk.Label(left, text=f"Status for tonight: {status_text} ({len(available_tonight)} rooms available)",
                  bg=WHITE, fg=MUTED, font=("Arial", 10)).pack(anchor="w", pady=(10, 0))
         description = str(room.get("description", "")).strip()
         if description:
@@ -403,6 +423,7 @@ class AccommodationPage(tk.Frame):
             feature_labels.append(feature_label)
 
         # Resize wrapped text and the photo to the real column widths.
+        # Adjust the room description text to fit its panel.
         def resize_detail_text(event=None):
             right_width = max(200, right.winfo_width() - 18)
             room_type_label.configure(wraplength=right_width)
@@ -435,6 +456,7 @@ class AccommodationPage(tk.Frame):
         self._make_button(action, "Back to rooms", self.show_gallery,
                           primary=False, padx=15, pady=10).pack(side="right", padx=(0, 8))
 
+    # Display the form for entering a guest reservation.
     def show_booking_form(self, room):
         self.selected_room = room
         self._clear_content()
@@ -442,7 +464,7 @@ class AccommodationPage(tk.Frame):
 
         top = tk.Frame(self.content_area, bg=BG)
         top.pack(fill="x", pady=(0, 8))
-        self._make_button(top, "‹  Back to room details",
+        self._make_button(top, "<  Back to room details",
                           lambda selected=room: self.show_details(selected), primary=False).pack(side="left")
         tk.Label(top, text="COMPLETE YOUR BOOKING", bg=BG, fg=NAVY,
                  font=("Arial", 10, "bold")).pack(side="right", pady=7)
@@ -460,32 +482,54 @@ class AccommodationPage(tk.Frame):
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
         tk.Label(left, text="YOUR SELECTED ROOM", bg=WHITE, fg=NAVY,
                  font=("Arial", 13, "bold")).pack(anchor="w", pady=(0, 10))
-        img = tk.Frame(left, bg=PALE_BLUE, height=175)
+        # Make the room photo use the full width of the selected-room panel.
+        # The previous fixed 390-pixel image left blue gaps on both sides when
+        # the left panel became wider than the original image.
+        image_height = 175
+        img = tk.Frame(left, bg=PALE_BLUE, height=image_height)
         img.pack(fill="x")
         img.pack_propagate(False)
-        photo = self.services.load_photo(room, (390, 175))
+
+        # Keep one Label across the full photo area. The BookingManager resizes
+        # the image to this Label's actual width after Tkinter lays out the page.
+        image_widget = tk.Label(img, bg=PALE_BLUE, bd=0)
+        image_widget.pack(fill="both", expand=True)
+        photo = self.services.load_photo(room, (390, image_height))
         if photo:
             self.photo_refs.append(photo)
-            tk.Label(img, image=photo, bg=PALE_BLUE, bd=0).pack(fill="both", expand=True)
+            image_widget.configure(image=photo)
+            image_widget.image = photo
+            image_widget._photo_size = (390, image_height)
         else:
-            tk.Label(img, text="✦", bg=PALE_BLUE, fg=SLATE_BLUE,
-                     font=("Arial", 30, "bold")).pack(pady=(34, 3))
-            tk.Label(img, text="ROOM PHOTO", bg=PALE_BLUE, fg=NAVY,
-                     font=("Arial", 9, "bold")).pack()
+            image_widget.configure(
+                text="✦\nROOM PHOTO",
+                fg=NAVY,
+                font=("Arial", 12, "bold"),
+                justify="center",
+            )
+
+        # Resize and crop the photo to fill the complete panel when its real
+        # width is known, and repeat if the application window is resized.
+        img.bind(
+            "<Configure>",
+            lambda _event, selected=room, target=image_widget, holder=img, height=image_height:
+                self.services.schedule_gallery_photo_resize(selected, target, holder, height)
+        )
+        self.after_idle(
+            lambda selected=room, target=image_widget, holder=img, height=image_height:
+                self.services.resize_gallery_photo(selected, target, holder.winfo_width(), height)
+        )
         tk.Label(left, text=room["room_type"], bg=WHITE, fg=TEXT,
                  font=("Arial", 15, "bold"), wraplength=400).pack(anchor="w", pady=(10, 2))
         tk.Label(left, text=f"Status: {room['status']}",
                  bg=WHITE, fg=MUTED, font=("Arial", 9)).pack(anchor="w")
-        tk.Label(left, text=f"RM{room['price_per_night']:.2f} / room / night", bg=WHITE, fg=NAVY,
+        tk.Label(left, text=f"RM{room['price_per_night']:.2f} / night", bg=WHITE, fg=NAVY,
                  font=("Arial", 15, "bold")).pack(anchor="w", pady=(10, 3))
         tk.Label(left, text="Choose how many rooms you need. Your room number will be provided when you check in.",
                  bg=WHITE, fg=MUTED, font=("Arial", 9), wraplength=400, justify="left").pack(anchor="w", pady=(4, 8))
         self.availability_var = tk.StringVar(value="Availability is checked for your selected dates.")
         tk.Label(left, textvariable=self.availability_var, bg=PALE_CARD, fg=TEXT,
                  font=("Arial", 9), wraplength=400, justify="left", padx=10, pady=9).pack(fill="x", pady=(4, 0))
-        tk.Label(left, text="Demo only: do not enter real card details. Payment details are not saved.",
-                 bg=WHITE, fg="#8B5C64", font=("Arial", 8), wraplength=400,
-                 justify="left").pack(anchor="w", pady=(9, 0))
 
         # Right side: scrollable form
         right = tk.Frame(body, bg=WHITE)
@@ -515,6 +559,7 @@ class AccommodationPage(tk.Frame):
 
         form.grid_columnconfigure(1, weight=1)
         self.form_vars = {}
+        self.special_request_vars = {}
         # If guests started with the homepage search bar, prefill the same
         # dates and guest/room counts after they select a room.
         home_search = getattr(self, "home_booking_search", {}) or {}
@@ -537,7 +582,22 @@ class AccommodationPage(tk.Frame):
                      font=("Arial", 9, "bold")).grid(row=row, column=0, sticky="w", padx=(0, 12), pady=5)
             variable = tk.StringVar(value=default)
             self.form_vars[key] = variable
-            if key == "amount_of_room":
+            if key == "special_requests":
+                # Let guests select the specific room preferences from Stage 1.
+                request_frame = tk.Frame(form, bg=WHITE)
+                request_frame.grid(row=row, column=1, sticky="ew", pady=5)
+                request_choices = ("Smoke-free", "Smoking", "Kids room", "No corner room", "Quiet room")
+                for choice_index, choice in enumerate(request_choices):
+                    choice_var = tk.BooleanVar(value=False)
+                    self.special_request_vars[choice] = choice_var
+                    tk.Checkbutton(
+                        request_frame, text=choice, variable=choice_var,
+                        bg=WHITE, fg=TEXT, activebackground=WHITE,
+                        selectcolor=PALE_BLUE, font=("Arial", 9),
+                    ).grid(row=choice_index // 2, column=choice_index % 2, sticky="w", padx=(0, 12), pady=2)
+                row += 1
+                continue
+            elif key == "amount_of_room":
                 self.quantity_var = variable
                 self.quantity_spinbox = ttk.Spinbox(
                     form, from_=1, to=99, textvariable=variable, width=8,
@@ -561,7 +621,7 @@ class AccommodationPage(tk.Frame):
         row += 1
         self.payment_detail_frame = tk.Frame(form, bg=PALE_CARD, padx=10, pady=8)
         self.payment_detail_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(4, 8))
-        tk.Label(self.payment_detail_frame, text="Choose a payment method to enter its demo details.",
+        tk.Label(self.payment_detail_frame, text="Choose a payment method to enter.",
                  bg=PALE_CARD, fg=MUTED, font=("Arial", 9), wraplength=430,
                  justify="left").pack(anchor="w")
 
@@ -581,6 +641,7 @@ class AccommodationPage(tk.Frame):
             self.form_vars[key].trace_add("write", lambda *_args: self._refresh_booking_total())
         self._refresh_booking_total()
 
+    # Show the payment fields that match the selected payment method.
     def _on_payment_method_change(self, _event=None):
         if self.payment_detail_frame is None:
             return
@@ -589,14 +650,14 @@ class AccommodationPage(tk.Frame):
         self.payment_detail_vars = {}
         method = self.payment_var.get().strip() if self.payment_var else ""
         if method == "Credit/Debit Card":
-            tk.Label(self.payment_detail_frame, text="Card payment details (demo only)",
+            tk.Label(self.payment_detail_frame, text="Card payment details",
                      bg=PALE_CARD, fg=NAVY, font=("Arial", 9, "bold")).grid(
                          row=0, column=0, columnspan=2, sticky="w", pady=(0, 4))
             payment_fields = [
                 ("cardholder", "Cardholder name", ""),
-                ("card_number", "Card number (test only)", ""),
+                ("card_number", "Card number", ""),
                 ("expiry", "Expiry (MM/YY)", ""),
-                ("cvv", "Security code (test only)", ""),
+                ("cvv", "Security code", ""),
             ]
             self.payment_detail_frame.grid_columnconfigure(1, weight=1)
             for row, (key, label_text, default) in enumerate(payment_fields, start=1):
@@ -631,6 +692,7 @@ class AccommodationPage(tk.Frame):
             self.payment_form_inner.update_idletasks()
             self.booking_form_canvas.configure(scrollregion=self.booking_form_canvas.bbox("all"))
 
+    # Check that the payment details entered by the guest are valid.
     def _validate_payment_details(self):
         method = self.payment_var.get().strip() if self.payment_var else ""
         if method not in PAYMENT_METHODS:
@@ -642,7 +704,7 @@ class AccommodationPage(tk.Frame):
             expiry = self.payment_detail_vars.get("expiry", tk.StringVar(value="")).get().strip()
             cvv = self.payment_detail_vars.get("cvv", tk.StringVar(value="")).get().strip()
             if not cardholder or not card_number.isdigit() or not (13 <= len(card_number) <= 19):
-                messagebox.showerror("Check card details", "For this demo, enter a cardholder name and a test card number containing 13–19 digits.", parent=self)
+                messagebox.showerror("Check card details", "Enter a cardholder name and a card number containing 13–19 digits.", parent=self)
                 return False
             if not re.fullmatch(r"(0[1-9]|1[0-2])/\d{2}", expiry):
                 messagebox.showerror("Check expiry date", "Enter expiry in MM/YY format, for example 08/28.", parent=self)
@@ -653,11 +715,12 @@ class AccommodationPage(tk.Frame):
         elif method == "E-wallet":
             account = self.payment_detail_vars.get("wallet_account", tk.StringVar(value="")).get().strip()
             if not account:
-                messagebox.showerror("E-wallet details required", "Enter a demo wallet phone/account value.", parent=self)
+                messagebox.showerror("E-wallet details required", "Enter a phone/account value.", parent=self)
                 return False
         return True
 
 
+    # Read the check-in and check-out dates and check that they are valid.
     def _parse_dates(self, show_errors=True):
         try:
             check_in = datetime.strptime(self.form_vars["check_in"].get().strip(), "%Y-%m-%d").date()
@@ -678,6 +741,7 @@ class AccommodationPage(tk.Frame):
 
 
 
+    # Recalculate the booking price when the room quantity or dates change.
     def _refresh_booking_total(self):
         if self.total_var is None or self.selected_room is None:
             return
@@ -699,15 +763,44 @@ class AccommodationPage(tk.Frame):
         available_rooms = self.services.available_rooms_for_dates(self.selected_room, check_in, check_out)
         available_count = len(available_rooms)
         if self.availability_var is not None:
-            self.availability_var.set(
-                f"{available_count} room(s) of this type are available for your selected dates."
+            total_type_rooms = sum(
+                1 for item in self.rooms
+                if item["room_type"].casefold() == self.selected_room["room_type"].casefold()
             )
-        total = self.selected_room["price_per_night"] * nights * quantity
-        self.total_var.set(f"Estimated total: RM{total:.2f}  ·  {nights} night(s)  ·  {quantity} room(s)")
+            if available_count == 0:
+                self.availability_var.set(
+                    f"UNAVAILABLE: all {total_type_rooms} rooms of this type are booked or checked in for your selected dates."
+                )
+            else:
+                self.availability_var.set(
+                    f"{available_count} of {total_type_rooms} rooms are available for your selected dates."
+                )
+        total_before_discount = self.selected_room["price_per_night"] * nights * quantity
+        promo_code = self.form_vars.get("promo_code", tk.StringVar()).get().strip().upper()
+        discount = 0.0
+        promo_note = ""
+        if promo_code == "LONGSTAY15":
+            if nights >= 5:
+                discount = total_before_discount * 0.15
+            else:
+                promo_note = " · LONGSTAY15 requires at least 5 nights"
+        elif promo_code == "WEEKEND20":
+            if nights >= 2 and check_in.weekday() in (4, 5):
+                discount = self.selected_room["price_per_night"] * quantity * 0.20
+            else:
+                promo_note = " · WEEKEND20 requires 2 nights starting Friday/Saturday"
+        elif promo_code:
+            promo_note = " · Promo code not recognised"
+        final_total = total_before_discount - discount
+        self.total_var.set(
+            f"Estimated total: RM{final_total:.2f}  ·  {nights} night(s)  ·  {quantity} room(s)"
+            + (f"  ·  Discount RM{discount:.2f}" if discount else "") + promo_note
+        )
 
 
+    # Check the booking form before passing it to the confirmation step.
     def _handle_confirm_booking(self):
-        """Run booking confirmation and show unexpected errors to the user."""
+        # Run booking confirmation and show unexpected errors to the user.
         try:
             self._confirm_booking()
         except Exception as error:
@@ -716,11 +809,11 @@ class AccommodationPage(tk.Frame):
             messagebox.showerror(
                 "Booking could not be completed",
                 "Something unexpected stopped the booking from being saved.\n\n"
-                f"Details: {error}\n\n"
-                "Please check your room.txt and booking.txt files, then try again.",
+                f"Details: {error}",
                 parent=self.winfo_toplevel(),
             )
 
+    # Check room availability and save the confirmed booking.
     def _confirm_booking(self):
         room = self.selected_room
         if room is None:
@@ -773,7 +866,32 @@ class AccommodationPage(tk.Frame):
         # in the existing room_number field, and the count in amount_of_room.
         assigned_rooms = available_rooms[:quantity]
         room_numbers = [str(item["room_number"]).strip() for item in assigned_rooms]
-        total = nights * room["price_per_night"] * quantity
+        total_before_discount = nights * room["price_per_night"] * quantity
+        promo_code = self.form_vars["promo_code"].get().strip().upper()
+        discount = 0.0
+        if promo_code == "LONGSTAY15":
+            if nights < 5:
+                messagebox.showwarning("Promo Conditions", "LONGSTAY15 is valid for stays of at least 5 nights.", parent=self)
+                return
+            discount = total_before_discount * 0.15
+        elif promo_code == "WEEKEND20":
+            if nights < 2 or check_in.weekday() not in (4, 5):
+                messagebox.showwarning(
+                    "Promo Conditions",
+                    "WEEKEND20 is valid for stays of at least 2 nights starting on Friday or Saturday.",
+                    parent=self,
+                )
+                return
+            discount = room["price_per_night"] * quantity * 0.20
+        elif promo_code:
+            messagebox.showwarning("Invalid Promo Code", "Please check the promo code and try again.", parent=self)
+            return
+        total = total_before_discount - discount
+        selected_requests = [name for name, variable in self.special_request_vars.items() if variable.get()]
+        if "Smoke-free" in selected_requests and "Smoking" in selected_requests:
+            messagebox.showwarning("Conflicting Room Requests", "Please choose Smoke-free or Smoking, not both.", parent=self)
+            return
+        special_requests = ", ".join(selected_requests)
         booking = {
             "name": name,
             "email": email,
@@ -786,8 +904,8 @@ class AccommodationPage(tk.Frame):
             "amount_of_room": str(quantity),
             "adults": str(adults),
             "children": str(children),
-            "special_requests": self.form_vars["special_requests"].get().strip(),
-            "promo_code": self.form_vars["promo_code"].get().strip(),
+            "special_requests": special_requests,
+            "promo_code": promo_code,
             "total_price": f"{total:.2f}",
             "payment_method": self.payment_var.get().strip(),
             "status": "Confirmed",
@@ -803,13 +921,18 @@ class AccommodationPage(tk.Frame):
             f"Room type: {room['room_type']}\n"
             "Your room number will be provided when you check in.\n"
             f"Dates: {check_in.isoformat()} to {check_out.isoformat()}\n"
-            f"Rooms: {quantity}\nNights: {nights}\nTotal: RM{total:.2f}\n\n"
-            "Payment detail fields are not stored in booking.txt.",
-            parent=self,
+            f"Rooms: {quantity}\nNights: {nights}\nSubtotal: RM{total_before_discount:.2f}\n"
+            f"Discount: RM{discount:.2f}\nTotal: RM{total:.2f}\n\n"
+            "Payment detail fields are not stored in our data system.",
+            parent=self.winfo_toplevel(),
         )
-        self.show_history()
+        # Return to the Home page after the guest closes the confirmation message.
+        main_window = self.winfo_toplevel()
+        if hasattr(main_window, "show_page"):
+            main_window.show_page("Home")
 
 
+    # Display the bookings saved in booking.txt.
     def show_history(self):
         self._clear_content()
         self._set_navigation_state("history")
@@ -881,5 +1004,5 @@ class AccommodationPage(tk.Frame):
             empty_state.place(relx=0.5, rely=0.48, anchor="center")
             tk.Label(empty_state, text="No bookings yet", bg=WHITE, fg=NAVY,
                      font=("Arial", 14, "bold")).pack(pady=(0, 5))
-            tk.Label(empty_state, text="Your confirmed bookings will be saved to booking.txt and appear here.",
+            tk.Label(empty_state, text="Your confirmed bookings will be saved and appear here.",
                      bg=WHITE, fg=MUTED, font=("Arial", 10)).pack()
