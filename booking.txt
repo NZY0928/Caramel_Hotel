@@ -3,3 +3,6 @@ name|email|hp|ic|room_type|room_number|check_in|check_out|amount_of_room|adults|
 Ng Zhi Ying|zi852270@gmail.com|01139263616|080928130770|Superior Twin|101|2026-10-25|2026-10-26|1|1|0|||160.00|E-wallet|Confirmed
 Amy|amy@amy.com|1234567890|1234567890098765|Superior Twin|101|2026-11-07|2026-11-08|1|1|0|||160.00|E-wallet|Checked Out
 Valerie|val@val.com|123456789098|12345678765432|Deluxe_Queen|301|2026-11-07|2026-11-25|1|1|0||LONGSTAY15|2754.00|E-wallet|Checked In
+Ryan|ryan@ryan.com|4554126541262|54126985423652|Superior Twin|101|2026-11-11|2026-12-25|1|2|0|||7040.00|Credit/Debit Card|Checked In
+Valentine|val@val.valval|4198541265412|5456854125584|Deluxe_Queen|302, 303|2026-11-13|2026-11-15|2|1|0||WEEKEND20|648.00|E-wallet|Confirmed
+Ceo|ceo@ceo.com|99999999999999|99999999999999|Superior Queen|151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200|2026-11-11|2026-11-12|50|1|0|Smoke-free||8000.00|Credit/Debit Card|Checked In

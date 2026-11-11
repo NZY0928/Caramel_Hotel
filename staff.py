@@ -7,6 +7,7 @@ It shares booking.txt with Accommodation and order.txt with Restaurant.
 import ast
 import json
 import math
+import re
 import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -52,8 +53,19 @@ MENU_CATEGORIES = (
 )
 
 
+def menu_item_sort_key(item):
+    # Sort menu IDs by their letter prefix, then by the numeric suffix.
+    item_id = str(item.get("id", "")).strip().upper()
+    match = re.fullmatch(r"([A-Z]+)(\d+)", item_id)
+    if match:
+        return (match.group(1), 0, int(match.group(2)), item_id)
+
+    # Keep unusual IDs visible after normal letter-and-number IDs.
+    return (item_id, 1, 0, item_id)
+
+
 class StaffPage(tk.Frame):
-    """Staff login and management screens shown inside main.py."""
+    # Staff login and management screens shown inside main.py.
 
     # Set up the Staff page and load the shared hotel records.
     def __init__(self, parent):
@@ -75,7 +87,12 @@ class StaffPage(tk.Frame):
         self._load_data()
         self._build_login()
 
+
+    # ------------------------------------------------------------
+    # STAFF LOGIN
     # Display the Staff login page in the same visual style as the Staff portal.
+    # Checks staff credentials before opening the admin portal.
+    # ------------------------------------------------------------
     def _build_login(self):
         for child in self.winfo_children():
             child.destroy()
@@ -282,7 +299,10 @@ class StaffPage(tk.Frame):
                 rooms.append(room)
         return rooms
 
+    # ------------------------------------------------------------
+    # ADMIN PORTAL AND NAVIGATION
     # Build the Staff sidebar and the main admin content area.
+    # ------------------------------------------------------------      
     def _build_portal(self):
         for child in self.winfo_children():
             child.destroy()
@@ -430,7 +450,11 @@ class StaffPage(tk.Frame):
             target_widget.bind("<Button-5>", lambda _event, target=tree: (target.yview_scroll(1, "units"), "break")[1])
         return tree
 
+
+    # ------------------------------------------------------------
+    # ADMIN DASHBOARD
     # Show the admin homepage with operating information and quick actions only.
+    # ------------------------------------------------------------
     def _show_dashboard(self):
         self.active_admin_page.set("Overview")
         self._load_data()
@@ -488,7 +512,10 @@ class StaffPage(tk.Frame):
             tk.Label(card, text=subtitle, bg=COLORS["card"], fg=COLORS["muted"],
                      font=("Segoe UI", 8), anchor="w").pack(fill="x", padx=17, pady=(0, 13))
 
+    # ------------------------------------------------------------
+    # RESERVATION MANAGEMENT
     # Display only customer reservations and filter them with the search bar.
+    # ------------------------------------------------------------
     def _show_reservations(self, search_text=None):
         self.active_admin_page.set("Reservations")
         if search_text is not None and getattr(self, "reservation_tree", None) is not None:
@@ -507,7 +534,9 @@ class StaffPage(tk.Frame):
                 if query and query not in name.casefold() and query not in phone.casefold() and query not in email.casefold():
                     continue
                 total = float(booking.get("total_price", 0) or 0)
-                tree.insert("", "end", iid=str(index), values=(name, phone, booking.get("room_type", ""),
+                tree.insert("", "end", iid=str(index), values=(
+                            name, phone, booking.get("room_type", ""),
+                            booking.get("amount_of_room", "1"),
                             booking.get("check_in", ""), booking.get("check_out", ""),
                             f"RM {total:.2f}", booking.get("payment_method", "")),
                             tags=("even" if count % 2 == 0 else "odd",))
@@ -535,8 +564,8 @@ class StaffPage(tk.Frame):
         panel = tk.Frame(self.content_area, bg=COLORS["card"], padx=12, pady=10)
         panel.pack(fill="both", expand=True)
         self.reservation_tree = self._create_table(
-            panel, ("Customer", "Phone", "Room Type", "Check-in", "Check-out", "Total Price", "Payment Method"),
-            (160, 110, 145, 105, 105, 105, 135),
+            panel, ("Customer", "Phone", "Room Type", "Rooms", "Check-in", "Check-out", "Total Price", "Payment Method"),
+            (155, 100, 140, 65, 105, 105, 100, 130),
         )
         self.reservation_tree.bind("<<TreeviewSelect>>", lambda _event: (
             self._show_checkin(self.bookings[int(self.reservation_tree.selection()[0])])
@@ -544,6 +573,11 @@ class StaffPage(tk.Frame):
         ))
         search_entry.bind("<KeyRelease>", lambda _event: self._show_reservations(search_entry.get()))
         self._show_reservations("")
+
+    # ------------------------------------------------------------
+    # CHECK-IN MANAGEMENT
+    # Handles reservation check-in and walk-in room assignments.
+    # ------------------------------------------------------------
 
     # Display the check-in form or save a reservation/walk-in check-in.
     def _show_checkin(self, selected_booking=None, action="show", fields=None):
@@ -585,18 +619,45 @@ class StaffPage(tk.Frame):
                     and saved.get("check_in", "") == selected_booking.get("check_in", "")
                     and saved.get("check_out", "") == selected_booking.get("check_out", "")
                     and saved.get("room_type", "").casefold() == selected_booking.get("room_type", "").casefold()
+                    and saved.get("room_number", "") == selected_booking.get("room_number", "")
+                    and saved.get("amount_of_room", "1") == selected_booking.get("amount_of_room", "1")
                     and saved.get("status", "").casefold() == "confirmed"), None)
                 if booking_to_update is None:
                     messagebox.showwarning("Reservation Not Found", "This reservation may already have been checked in.", parent=self)
                     self._show_reservations()
                     return
-            rooms_to_assign = self._available_room_numbers(
-                values["room_type"], check_in, check_out, quantity, exclude_booking=booking_to_update
+            # Check all rooms of this type so an existing reservation can keep
+            # the room numbers that were already assigned when it was booked.
+            available_numbers = self._available_room_numbers(
+                values["room_type"], check_in, check_out, None,
+                exclude_booking=booking_to_update,
             )
-            if len(rooms_to_assign) < quantity:
-                messagebox.showwarning("No Rooms Available", f"Only {len(rooms_to_assign)} room(s) are available for this room type and date range.", parent=self)
+            if len(available_numbers) < quantity:
+                messagebox.showwarning(
+                    "No Rooms Available",
+                    f"Only {len(available_numbers)} room(s) are available for this room type and date range.",
+                    parent=self,
+                )
                 return
-            assigned_numbers = rooms_to_assign[:quantity]
+
+            if booking_to_update is not None:
+                # Reuse the customer's reserved rooms whenever they remain free.
+                reserved_numbers = [
+                    number.strip()
+                    for number in str(booking_to_update.get("room_number", "")).split(",")
+                    if number.strip()
+                ]
+            else:
+                reserved_numbers = []
+
+            if len(reserved_numbers) == quantity and all(
+                number in available_numbers for number in reserved_numbers
+            ):
+                assigned_numbers = reserved_numbers
+            else:
+                # Old records without a complete room assignment receive the
+                # first available rooms of the selected room type.
+                assigned_numbers = available_numbers[:quantity]
 
             if walk_in:
                 price = next((r["price_per_night"] for r in self.rooms
@@ -768,7 +829,10 @@ class StaffPage(tk.Frame):
             self._show_checkout(self.bookings[int(tree.selection()[0])]) if tree.selection() else None
         ))
 
-    # Display the full guest stay record and allow currently checked-in guests to check out.
+    # ------------------------------------------------------------
+    # CHECK-OUT MANAGEMENT
+    # Displays checked-in guests and records their check-out.
+    # ------------------------------------------------------------
     def _show_checkout(self, selected_booking=None, finish=False):
         self.active_admin_page.set("Check-out")
         self._load_data()
@@ -867,8 +931,8 @@ class StaffPage(tk.Frame):
             tk.Label(panel, text="No completed check-out records yet.",
                      bg=COLORS["card"], fg=COLORS["muted"], font=("Segoe UI", 10)).pack(pady=15)
 
-    # Find physical room numbers that have no overlapping reservation for the selected dates.
-    def _available_room_numbers(self, room_type, check_in, check_out, quantity, exclude_booking=None):
+    # Find room numbers that have no overlapping reservation for the requested dates.
+    def _available_room_numbers(self, room_type, check_in, check_out, quantity=None, exclude_booking=None):
         self.rooms = self._read_rooms()
         available = []
         for room in self.rooms:
@@ -880,7 +944,10 @@ class StaffPage(tk.Frame):
                     continue
                 if saved.get("status", "").casefold() in ("cancelled", "canceled", "rejected", "checked out"):
                     continue
-                room_numbers = {part.strip() for part in str(saved.get("room_number", "")).split(",") if part.strip()}
+                room_numbers = {
+                    part.strip() for part in str(saved.get("room_number", "")).split(",")
+                    if part.strip()
+                }
                 if room["room_number"] not in room_numbers:
                     continue
                 try:
@@ -893,109 +960,275 @@ class StaffPage(tk.Frame):
                     break
             if not reserved:
                 available.append(room["room_number"])
-        return available[:quantity]
+        return available if quantity is None else available[:quantity]
 
-    # Browse menu items by category or open the form for adding a new food/drink item.
+    # ------------------------------------------------------------
+    # MENU MANAGEMENT
+    # Handles menu display, editing, adding and removing items.
+    # ------------------------------------------------------------
+
+    # Manage the food and drink menu, including adding, editing and removing items.
     def _show_menu_management(self, category="All", action=None, data=None):
         self.active_admin_page.set("Menu Management")
+
+        # Let the admin choose a picture from the computer.
         if action == "browse":
-            selected_file = filedialog.askopenfilename(parent=self, title="Choose food picture",
-                filetypes=(("Image files", "*.png *.jpg *.jpeg *.gif *.bmp"), ("All files", "*.*")))
+            selected_file = filedialog.askopenfilename(
+                parent=self,
+                title="Choose food picture",
+                filetypes=(("Image files", "*.png *.jpg *.jpeg *.gif *.bmp"), ("All files", "*.*")),
+            )
             if selected_file and data is not None:
                 data.delete(0, tk.END)
                 data.insert(0, selected_file)
             return
 
+        # Save a new menu item or update an existing item.
         if action == "save":
-            entries = data
-            item = {key: widget.get().strip() for key, widget in entries.items() if key != "description"}
+            form_data = data
+            entries = form_data["entries"]
+            mode = form_data["mode"]
+            original_id = form_data.get("original_id", "")
+            item = {
+                key: widget.get().strip()
+                for key, widget in entries.items()
+                if key != "description"
+            }
             item["description"] = entries["description"].get("1.0", "end").strip()
+
             if not all(item.get(key) for key in ("id", "name", "category", "price", "image")):
-                messagebox.showwarning("Missing Information", "Complete the item ID, name, category, price and picture.", parent=self)
+                messagebox.showwarning(
+                    "Missing Information",
+                    "Complete the item ID, name, category, price and picture.",
+                    parent=self,
+                )
                 return
+
             try:
                 price = float(item["price"])
                 if not math.isfinite(price) or price < 0:
                     raise ValueError
-            except ValueError:
+            except (TypeError, ValueError):
                 messagebox.showwarning("Invalid Price", "Enter a valid price of zero or more.", parent=self)
                 return
+
             menu_items = self._read_menu_items()
-            if any(saved["id"].casefold() == item["id"].casefold() for saved in menu_items):
-                messagebox.showwarning("Duplicate Item ID", "This item ID already exists. Enter a different ID.", parent=self)
+            existing_index = next(
+                (index for index, saved in enumerate(menu_items)
+                 if saved["id"].casefold() == str(original_id).casefold()),
+                None,
+            ) if mode == "edit" else None
+
+            if mode == "edit" and existing_index is None:
+                messagebox.showwarning(
+                    "Menu Item Not Found",
+                    "This item is no longer in the menu. Refresh the menu and try again.",
+                    parent=self,
+                )
+                self._show_menu_management(category)
                 return
+
+            if mode == "add" and any(
+                saved["id"].casefold() == item["id"].casefold() for saved in menu_items
+            ):
+                messagebox.showwarning(
+                    "Duplicate Item ID",
+                    "This item ID already exists. Enter a different ID.",
+                    parent=self,
+                )
+                return
+
             try:
                 self.images_folder.mkdir(exist_ok=True)
-                source_image = Path(item["image"])
-                if not source_image.is_file():
-                    messagebox.showwarning("Picture Not Found", "Choose an existing image file.", parent=self)
-                    return
-                destination = self.images_folder / source_image.name
-                if source_image.resolve() != destination.resolve():
-                    if destination.exists():
-                        destination = self.images_folder / (source_image.stem + "_new" + source_image.suffix)
-                    shutil.copy2(source_image, destination)
-                item["image"] = destination.name
+                original_item = menu_items[existing_index] if existing_index is not None else None
+                image_text = item["image"].strip()
+
+                # When editing, keep the current image if the admin did not choose
+                # a replacement. This also avoids requiring the same image again.
+                if original_item is not None and image_text == str(original_item.get("image", "")).strip():
+                    item["image"] = original_item.get("image", "")
+                else:
+                    source_image = Path(image_text)
+                    if not source_image.is_file():
+                        image_in_assets = self.images_folder / source_image.name
+                        if image_in_assets.is_file():
+                            source_image = image_in_assets
+                    if not source_image.is_file():
+                        messagebox.showwarning(
+                            "Picture Not Found",
+                            "Choose an existing image file.",
+                            parent=self,
+                        )
+                        return
+
+                    destination = self.images_folder / source_image.name
+                    if source_image.resolve() != destination.resolve():
+                        # Avoid overwriting another menu picture when filenames match.
+                        if destination.exists():
+                            stem = source_image.stem
+                            suffix = source_image.suffix
+                            counter = 2
+                            while destination.exists():
+                                destination = self.images_folder / f"{stem}_{counter}{suffix}"
+                                counter += 1
+                        shutil.copy2(source_image, destination)
+                    item["image"] = destination.name
+
                 item["price"] = f"{price:.2f}"
-                menu_items.append(item)
-                lines = ["# ID|Name|Category|Price|Image|Description"]
-                for saved in menu_items:
-                    lines.append("|".join(self._safe_field(saved.get(key, "")) for key in
-                                                ("id", "name", "category", "price", "image", "description")))
-                self.menu_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                import restaurant
-                restaurant.products = restaurant.read_menu()
-                if hasattr(restaurant, "IMAGE_CACHE"):
-                    restaurant.IMAGE_CACHE.clear()
+                if mode == "edit":
+                    menu_items[existing_index] = item
+                else:
+                    menu_items.append(item)
+
+                self._write_menu_items(menu_items)
             except (OSError, ImportError, ValueError, SyntaxError) as error:
                 messagebox.showerror("Could Not Save Menu Item", str(error), parent=self)
                 return
-            messagebox.showinfo("Menu Updated", f"{item['name']} has been added to the hotel menu.", parent=self)
+
+            if mode == "edit":
+                messagebox.showinfo("Menu Updated", f"{item['name']} has been updated.", parent=self)
+            else:
+                messagebox.showinfo("Menu Updated", f"{item['name']} has been added to the hotel menu.", parent=self)
+            self._show_menu_management(item["category"])
+            return
+
+        # Remove the selected item only after the admin confirms the action.
+        if action == "remove":
+            item_id = str(data or "").strip()
+            menu_items = self._read_menu_items()
+            selected_item = next(
+                (saved for saved in menu_items if saved["id"].casefold() == item_id.casefold()),
+                None,
+            )
+            if selected_item is None:
+                messagebox.showwarning("Menu Item Not Found", "This item is no longer in the menu.", parent=self)
+                self._show_menu_management(category)
+                return
+            confirmed = messagebox.askyesno(
+                "Remove Menu Item",
+                f"Remove {selected_item['name']} from the menu?\n\n"
+                "Existing orders will keep their saved item details.",
+                parent=self,
+            )
+            if not confirmed:
+                return
+            menu_items = [saved for saved in menu_items if saved["id"].casefold() != item_id.casefold()]
+            try:
+                self._write_menu_items(menu_items)
+            except (OSError, ImportError, ValueError, SyntaxError) as error:
+                messagebox.showerror("Could Not Remove Menu Item", str(error), parent=self)
+                return
+            messagebox.showinfo("Menu Updated", f"{selected_item['name']} has been removed from the menu.", parent=self)
             self._show_menu_management(category)
             return
 
+        # Load current menu records and available category filters.
         menu_items = self._read_menu_items()
         categories = ["All"] + sorted(set(item["category"] for item in menu_items if item.get("category")))
-        if action == "add":
+
+        # Show the same form for creating a new item and editing an existing one.
+        if action in ("add", "edit"):
+            mode = action
+            original_item = None
+            if mode == "edit":
+                item_id = str(data or "").strip()
+                original_item = next(
+                    (saved for saved in menu_items if saved["id"].casefold() == item_id.casefold()),
+                    None,
+                )
+                if original_item is None:
+                    messagebox.showwarning("Menu Item Not Found", "Select a valid menu item to edit.", parent=self)
+                    self._show_menu_management(category)
+                    return
+
             self._clear_content()
-            tk.Label(self.content_area, text="Add Food / Drink", bg=COLORS["bg"], fg=COLORS["accent"],
+            heading = "Edit Food / Drink" if mode == "edit" else "Add Food / Drink"
+            instruction = (
+                "Update the selected food or drink details. The item ID stays the same so existing orders remain linked."
+                if mode == "edit" else
+                "Enter the item details and choose a picture from your computer."
+            )
+            tk.Label(self.content_area, text=heading, bg=COLORS["bg"], fg=COLORS["accent"],
                      font=("Georgia", 23, "bold")).pack(anchor="w")
-            tk.Label(self.content_area, text="Enter the item details and choose a picture from your computer.",
-                     bg=COLORS["bg"], fg=COLORS["muted"], font=("Segoe UI", 9)).pack(anchor="w", pady=(3, 12))
+            tk.Label(self.content_area, text=instruction, bg=COLORS["bg"], fg=COLORS["muted"],
+                     font=("Segoe UI", 9), wraplength=850, justify="left").pack(anchor="w", pady=(3, 12))
             card = tk.Frame(self.content_area, bg=COLORS["card"], padx=20, pady=18,
                             highlightbackground=COLORS["line"], highlightthickness=1)
             card.pack(fill="both", expand=True)
             entries = {}
-            field_labels = (("id", "Item ID *"), ("name", "Food / drink name *"),
-                            ("category", "Category *"), ("price", "Price (RM) *"),
-                            ("image", "Food picture *"))
+            field_labels = (
+                ("id", "Item ID *"),
+                ("name", "Food / drink name *"),
+                ("category", "Category *"),
+                ("price", "Price (RM) *"),
+                ("image", "Food picture *"),
+            )
             for index, (key, label) in enumerate(field_labels):
                 row, column = divmod(index, 2)
                 tk.Label(card, text=label, bg=COLORS["card"], fg=COLORS["text"],
-                         font=("Segoe UI", 8, "bold")).grid(row=row * 2, column=column, sticky="w", padx=8, pady=(5, 2))
+                         font=("Segoe UI", 8, "bold")).grid(
+                             row=row * 2, column=column, sticky="w", padx=8, pady=(5, 2)
+                         )
                 if key == "category":
-                    widget = ttk.Combobox(card, values=MENU_CATEGORIES, state="readonly")
+                    widget = ttk.Combobox(
+                        card,
+                        values=sorted(set(MENU_CATEGORIES + tuple(
+                            saved["category"] for saved in menu_items if saved.get("category")
+                        ))),
+                        state="readonly",
+                    )
                 else:
                     widget = tk.Entry(card, font=("Segoe UI", 10), relief="solid", bd=1)
                 widget.grid(row=row * 2 + 1, column=column, sticky="ew", padx=8, pady=(2, 10), ipady=5)
+                if original_item is not None:
+                    field_value = original_item.get(key, "")
+                    if key == "price":
+                        field_value = f"{float(field_value):.2f}"
+                    if key == "category":
+                        widget.set(str(field_value))
+                    else:
+                        widget.insert(0, str(field_value))
                 entries[key] = widget
                 card.grid_columnconfigure(column, weight=1)
-            tk.Button(card, text="Browse Picture…", command=lambda: self._show_menu_management(category, "browse", entries["image"]),
-                      bg=COLORS["pale"], fg=COLORS["accent"], relief="flat", padx=12, pady=8).grid(
-                          row=5, column=0, sticky="w", padx=8, pady=(0, 12))
+
+                # Keep item IDs stable because the order history refers to them.
+                if key == "id" and mode == "edit":
+                    widget.configure(state="disabled")
+
+            tk.Button(
+                card,
+                text="Browse Picture…",
+                command=lambda: self._show_menu_management(category, "browse", entries["image"]),
+                bg=COLORS["pale"], fg=COLORS["accent"], relief="flat", padx=12, pady=8,
+            ).grid(row=5, column=0, sticky="w", padx=8, pady=(0, 12))
             tk.Label(card, text="Description", bg=COLORS["card"], fg=COLORS["text"],
                      font=("Segoe UI", 8, "bold")).grid(row=6, column=0, sticky="w", padx=8)
             description = tk.Text(card, height=4, font=("Segoe UI", 9), relief="solid", bd=1, wrap="word")
             description.grid(row=7, column=0, columnspan=2, sticky="ew", padx=8, pady=(3, 12))
+            if original_item is not None:
+                description.insert("1.0", str(original_item.get("description", "")))
             entries["description"] = description
+
             buttons = tk.Frame(card, bg=COLORS["card"])
             buttons.grid(row=8, column=0, columnspan=2, sticky="e", padx=8)
-            tk.Button(buttons, text="Cancel", command=lambda: self._show_menu_management(category),
-                      bg=COLORS["pale"], fg=COLORS["accent"], relief="flat", padx=14, pady=8).pack(side="right", padx=(8, 0))
-            tk.Button(buttons, text="Save Food / Drink", command=lambda: self._show_menu_management(category, "save", entries),
-                      bg=COLORS["accent"], fg="white", relief="flat", padx=15, pady=8).pack(side="right")
+            tk.Button(
+                buttons, text="Cancel", command=lambda: self._show_menu_management(category),
+                bg=COLORS["pale"], fg=COLORS["accent"], relief="flat", padx=14, pady=8,
+            ).pack(side="right", padx=(8, 0))
+            save_label = "Save Changes" if mode == "edit" else "Save Food / Drink"
+            tk.Button(
+                buttons,
+                text=save_label,
+                command=lambda: self._show_menu_management(
+                    category, "save",
+                    {"entries": entries, "mode": mode,
+                     "original_id": original_item.get("id", "") if original_item else ""},
+                ),
+                bg=COLORS["accent"], fg="white", relief="flat", padx=15, pady=8,
+            ).pack(side="right")
             return
 
+        # Display the menu items in a table with edit and remove actions.
         self._clear_content()
         tk.Label(self.content_area, text="Menu Management", bg=COLORS["bg"], fg=COLORS["accent"],
                  font=("Georgia", 23, "bold")).pack(anchor="w")
@@ -1007,41 +1240,113 @@ class StaffPage(tk.Frame):
         category_box = ttk.Combobox(top, textvariable=category_var, values=categories, state="readonly", width=20)
         category_box.pack(side="left", padx=9)
         category_box.bind("<<ComboboxSelected>>", lambda _event: self._show_menu_management(category_var.get()))
-        tk.Button(top, text="+ Add Food / Drink", command=lambda: self._show_menu_management(category_var.get(), "add"),
-                  bg=COLORS["accent"], fg="white", relief="flat", padx=14, pady=8,
-                  font=("Segoe UI", 9, "bold")).pack(side="right")
+        tk.Button(
+            top,
+            text="+ Add Food / Drink",
+            command=lambda: self._show_menu_management(category_var.get(), "add"),
+            bg=COLORS["accent"], fg="white", relief="flat", padx=14, pady=8,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="right")
+
         panel = tk.Frame(self.content_area, bg=COLORS["card"], padx=12, pady=10)
         panel.pack(fill="both", expand=True)
-        visible = [item for item in menu_items if category_var.get() == "All" or item["category"] == category_var.get()]
+        # Apply the selected category filter, then sort by ID letters and numeric part.
+        # For example: A01, A02, A10 (not A01, A10, A02).
+        visible = sorted(
+            (
+                item for item in menu_items
+                if category_var.get() == "All" or item["category"] == category_var.get()
+            ),
+            key=menu_item_sort_key,
+        )
         tk.Label(panel, text=f"{category_var.get()} · {len(visible)} item(s)", bg=COLORS["card"],
                  fg=COLORS["accent"], font=("Georgia", 14, "bold")).pack(anchor="w")
-        tree = self._create_table(panel, ("Item ID", "Name", "Category", "Price", "Description", "Image"),
-                                  (85, 165, 120, 90, 280, 130))
-        for index, item in enumerate(visible):
-            tree.insert("", "end", iid=str(index), values=(item["id"], item["name"], item["category"],
-                        f"RM {float(item['price']):.2f}", item.get("description", ""), item["image"]))
+        tree = self._create_table(
+            panel,
+            ("Item ID", "Name", "Category", "Price", "Description", "Image"),
+            (85, 165, 120, 90, 280, 130),
+        )
+        for item in visible:
+            tree.insert(
+                "", "end", iid=item["id"],
+                values=(item["id"], item["name"], item["category"],
+                        f"RM {float(item['price']):.2f}", item.get("description", ""), item["image"]),
+            )
+
+        tk.Label(
+            panel,
+            text="Select a food or drink above to edit its details or remove it from the menu.",
+            bg=COLORS["card"], fg=COLORS["muted"], font=("Segoe UI", 8),
+        ).pack(anchor="w", pady=(10, 4))
+        action_row = tk.Frame(panel, bg=COLORS["card"])
+        action_row.pack(fill="x")
+
+        def selected_item_id():
+            selection = tree.selection()
+            return str(tree.item(selection[0], "values")[0]) if selection else ""
+
+        def edit_selected_item():
+            selected_id = selected_item_id()
+            if selected_id:
+                self._show_menu_management(category_var.get(), "edit", selected_id)
+
+        def remove_selected_item():
+            selected_id = selected_item_id()
+            if selected_id:
+                self._show_menu_management(category_var.get(), "remove", selected_id)
+
+        edit_button = tk.Button(
+            action_row, text="Edit Details", command=edit_selected_item,
+            bg=COLORS["accent"], fg="white", relief="flat", padx=16, pady=8,
+            font=("Segoe UI", 9, "bold"), state="disabled",
+        )
+        edit_button.pack(side="left", padx=(0, 8))
+        remove_button = tk.Button(
+            action_row, text="Remove from Menu", command=remove_selected_item,
+            bg=COLORS["red"], fg="white", relief="flat", padx=16, pady=8,
+            font=("Segoe UI", 9, "bold"), state="disabled",
+        )
+        remove_button.pack(side="left")
+
+        def update_menu_actions(_event=None):
+            state = "normal" if tree.selection() else "disabled"
+            edit_button.configure(state=state)
+            remove_button.configure(state=state)
+
+        tree.bind("<<TreeviewSelect>>", update_menu_actions)
+        tree.bind("<Double-1>", lambda _event: edit_selected_item())
 
     # Read menu_dict or the six-column text format into one consistent list.
     def _read_menu_items(self):
         if not self.menu_file.is_file():
             return []
-        text = self.menu_file.read_text(encoding="utf-8-sig")
+        menu_text = self.menu_file.read_text(encoding="utf-8-sig")
         items = []
-        if "menu_dict" in text:
-            tree = ast.parse(text, filename=str(self.menu_file))
-            assignment = next(node for node in tree.body if isinstance(node, ast.Assign)
-                              and any(isinstance(target, ast.Name) and target.id == "menu_dict" for target in node.targets))
+
+        # Support the original Python dictionary format used by menu.txt.
+        if "menu_dict" in menu_text:
+            tree = ast.parse(menu_text, filename=str(self.menu_file))
+            assignment = next(
+                node for node in tree.body
+                if isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == "menu_dict" for target in node.targets)
+            )
             menu_data = ast.literal_eval(assignment.value)
             if isinstance(menu_data, dict):
                 for item_id, details in menu_data.items():
                     if isinstance(details, dict):
-                        items.append({"id": str(item_id), "name": str(details.get("Name", "")).strip(),
-                                      "category": str(details.get("Category", "")).strip(),
-                                      "price": float(details.get("Price", 0)),
-                                      "image": str(details.get("Image", "")).strip(),
-                                      "description": str(details.get("Description", "")).strip()})
+                        items.append({
+                            "id": str(item_id),
+                            "name": str(details.get("Name", "")).strip(),
+                            "category": str(details.get("Category", "")).strip(),
+                            "price": float(details.get("Price", 0)),
+                            "image": str(details.get("Image", "")).strip(),
+                            "description": str(details.get("Description", "")).strip(),
+                        })
             return items
-        for line in text.splitlines():
+
+        # Also accept the five-column and six-column text formats.
+        for line in menu_text.splitlines():
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
             parts = [value.strip() for value in line.split("|")]
@@ -1055,9 +1360,37 @@ class StaffPage(tk.Frame):
                 price = float(parts[3])
             except ValueError:
                 continue
-            items.append({"id": parts[0], "name": parts[1], "category": parts[2],
-                          "price": price, "image": parts[4], "description": parts[5]})
+            items.append({
+                "id": parts[0], "name": parts[1], "category": parts[2],
+                "price": price, "image": parts[4], "description": parts[5],
+            })
         return items
+
+    # Save menu records in the text format supported by both Staff and Restaurant.
+    def _write_menu_items(self, menu_items):
+        # Always save in natural Item ID order so a deleted item added again
+        # returns to its correct position instead of being appended at the bottom.
+        menu_items = sorted(menu_items, key=menu_item_sort_key)
+        lines = ["# ID|Name|Category|Price|Image|Description"]
+        for item in menu_items:
+            lines.append("|".join(
+                self._safe_field(item.get(key, ""))
+                for key in ("id", "name", "category", "price", "image", "description")
+            ))
+        self.menu_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        # Refresh the customer-facing menu after the file has been updated.
+        try:
+            import restaurant
+            try:
+                restaurant.products = restaurant.read_menu()
+            except ValueError:
+                restaurant.products = []
+            if hasattr(restaurant, "IMAGE_CACHE"):
+                restaurant.IMAGE_CACHE.clear()
+        except ImportError:
+            # The file is still saved; the menu module will read it next time it opens.
+            pass
 
     # Save the current order records in the shared order.txt JSON file.
     def _save_orders(self):
@@ -1068,7 +1401,10 @@ class StaffPage(tk.Frame):
             messagebox.showerror("Order File Error", f"Could not save order.txt:\n{error}", parent=self)
             return False
 
-    # Show active restaurant customers, order history and selected order details.
+    # ------------------------------------------------------------
+    # RESTAURANT ORDER MANAGEMENT
+    # Displays active restaurant customers and order history.
+    # ------------------------------------------------------------
     def _show_table_overview(self, view="current", selected_group=None, action=None):
         self.active_admin_page.set("Table Overview")
         self._load_data()

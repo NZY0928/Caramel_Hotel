@@ -164,7 +164,10 @@ class AccommodationPage(tk.Frame):
                 parent=self,
             )
 
+    # -------------------------------------------------------------
+    # ROOM GALLERY
     # Display the available rooms as a gallery of room cards.
+    # -------------------------------------------------------------
     def show_gallery(self):
         self._clear_content()
         self._set_navigation_state("gallery")
@@ -291,7 +294,10 @@ class AccommodationPage(tk.Frame):
             if child is not bottom:
                 child.bind("<Button-1>", lambda _event, selected=room: self.show_details(selected))
 
+    # ------------------------------------------------------------
+    # ROOM DETAILS
     # Display the details and features of the selected room.
+    # ------------------------------------------------------------
     def show_details(self, room):
         self.selected_room = room
         self._clear_content()
@@ -456,6 +462,11 @@ class AccommodationPage(tk.Frame):
         self._make_button(action, "Back to rooms", self.show_gallery,
                           primary=False, padx=15, pady=10).pack(side="right", padx=(0, 8))
 
+    # ------------------------------------------------------------
+    # CUSTOMER BOOKING
+    # Collects one guest profile and books the selected room quantity.
+    # ------------------------------------------------------------
+
     # Display the form for entering a guest reservation.
     def show_booking_form(self, room):
         self.selected_room = room
@@ -525,7 +536,7 @@ class AccommodationPage(tk.Frame):
                  bg=WHITE, fg=MUTED, font=("Arial", 9)).pack(anchor="w")
         tk.Label(left, text=f"RM{room['price_per_night']:.2f} / night", bg=WHITE, fg=NAVY,
                  font=("Arial", 15, "bold")).pack(anchor="w", pady=(10, 3))
-        tk.Label(left, text="Choose how many rooms you need. Your room number will be provided when you check in.",
+        tk.Label(left, text="Choose how many rooms of this type you need. One guest profile will be used for all rooms, and room numbers will be provided at check-in.",
                  bg=WHITE, fg=MUTED, font=("Arial", 9), wraplength=400, justify="left").pack(anchor="w", pady=(4, 8))
         self.availability_var = tk.StringVar(value="Availability is checked for your selected dates.")
         tk.Label(left, textvariable=self.availability_var, bg=PALE_CARD, fg=TEXT,
@@ -572,7 +583,7 @@ class AccommodationPage(tk.Frame):
             ("check_out", "Check-out (YYYY-MM-DD)", home_search.get("check_out", (date.today() + timedelta(days=1)).isoformat())),
             ("adults", "Adults", home_search.get("adults", "1")),
             ("children", "Children", home_search.get("children", "0")),
-            ("amount_of_room", "Amount of rooms", home_search.get("amount_of_room", "1")),
+            ("amount_of_room", "Number of rooms (same room type)", home_search.get("amount_of_room", "1")),
             ("special_requests", "Special requests (optional)", ""),
             ("promo_code", "Promo code (optional)", ""),
         ]
@@ -640,6 +651,11 @@ class AccommodationPage(tk.Frame):
         for key in ("check_in", "check_out", "amount_of_room", "promo_code"):
             self.form_vars[key].trace_add("write", lambda *_args: self._refresh_booking_total())
         self._refresh_booking_total()
+
+    # ------------------------------------------------------------
+    # PAYMENT VALIDATION
+    # Displays and checks the selected payment method details.
+    # ------------------------------------------------------------
 
     # Show the payment fields that match the selected payment method.
     def _on_payment_method_change(self, _event=None):
@@ -720,7 +736,11 @@ class AccommodationPage(tk.Frame):
         return True
 
 
+    # -----------------------------------------------------------
+    # BOOKING DATES AND PRICE CALCULATION
     # Read the check-in and check-out dates and check that they are valid.
+    # refreshes the estimated total.
+    # -----------------------------------------------------------
     def _parse_dates(self, show_errors=True):
         try:
             check_in = datetime.strptime(self.form_vars["check_in"].get().strip(), "%Y-%m-%d").date()
@@ -738,7 +758,6 @@ class AccommodationPage(tk.Frame):
                 messagebox.showerror("Invalid check-out", "Check-out must be later than check-in.", parent=self)
             return None
         return check_in, check_out
-
 
 
     # Recalculate the booking price when the room quantity or dates change.
@@ -797,8 +816,11 @@ class AccommodationPage(tk.Frame):
             + (f"  ·  Discount RM{discount:.2f}" if discount else "") + promo_note
         )
 
-
+    # ------------------------------------------------------------
+    # BOOKING CONFIRMATION
+    # Validates details and saves the customer's room booking.
     # Check the booking form before passing it to the confirmation step.
+    # ------------------------------------------------------------
     def _handle_confirm_booking(self):
         # Run booking confirmation and show unexpected errors to the user.
         try:
@@ -932,7 +954,11 @@ class AccommodationPage(tk.Frame):
             main_window.show_page("Home")
 
 
+    
+    # ------------------------------------------------------------
+    # BOOKING HISTORY
     # Display the bookings saved in booking.txt.
+    # ------------------------------------------------------------
     def show_history(self):
         self._clear_content()
         self._set_navigation_state("history")

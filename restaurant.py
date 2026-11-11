@@ -8,7 +8,10 @@ from tkinter import messagebox, ttk
 from PIL import Image, ImageOps, ImageTk
 
 
+# ------------------------------------------------------------
+# CUSTOMER RESTAURANT MENU AND ORDERING
 # File locations, colours and charges used by the restaurant pages.
+# ------------------------------------------------------------
 FOLDER = Path(__file__).resolve().parent
 MENU_FILE = FOLDER / "menu.txt"
 IMAGE_FOLDER = FOLDER / "images"
@@ -165,7 +168,7 @@ def money(amount):
     return f"RM {Decimal(str(amount)):.2f}"
 
 
-# Load saved orders from order.txt. If only the old rorders.txt exists, migrate its records.
+# Load saved orders from order.txt. 
 products = []  # The menu is loaded when the customer opens the Menu page.
 orders = []
 orders_source = ORDERS_FILE if ORDERS_FILE.is_file() else OLD_ORDERS_FILE
@@ -177,7 +180,6 @@ if orders_source.is_file():
     except (OSError, json.JSONDecodeError):
         orders = []
 if not ORDERS_FILE.is_file():
-    # Create the new file without deleting or modifying the old rorders.txt file.
     ORDERS_FILE.write_text(json.dumps(orders, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
 
 # Give older orders a permanent ID if they do not already have one.
@@ -611,7 +613,6 @@ def build_restaurant_ui(parent):
     window.configure(bg=BG_COLOUR)
 
     # The Menu heading stays on the left, with Basket and My Orders on the right.
-    # This follows the same layout as the Accommodation heading and its page buttons.
     header = tk.Frame(window, bg=BG_COLOUR)
     header.pack(fill="x", padx=22, pady=(16, 8))
 
@@ -945,7 +946,7 @@ def build_restaurant_ui(parent):
         pady=10,
     ).pack(fill="x", pady=(5, 0))
 
-    # My Orders page: use the same history-table layout as Accommodation.
+
     orders_page = pages["Orders"]
     orders_page.rowconfigure(0, weight=1)
     orders_page.columnconfigure(0, weight=1)
@@ -970,7 +971,7 @@ def build_restaurant_ui(parent):
         cursor="hand2", font=("Arial", 9, "bold"), padx=14, pady=9,
     ).pack(side="right")
 
-    # Match the blue heading, alternating rows and scrollbars of Booking History.
+    # Match the blue heading, alternating rows and scrollbars to the Caramel Hotel theme.
     table_shell = tk.Frame(orders_content, bg="#D0D9E0", padx=1, pady=1)
     table_shell.pack(fill="both", expand=True)
     history_frame = tk.Frame(table_shell, bg=WHITE_COLOUR)
@@ -1037,7 +1038,7 @@ def build_restaurant_ui(parent):
 
 
 class RestaurantPage(tk.Frame):
-    """Restaurant pages embedded in main.py's shared window."""
+    # Restaurant pages embedded in main.py's shared window.
 
     # Prepare the restaurant page and connect scrolling to the visible restaurant list.
     def __init__(self, parent):

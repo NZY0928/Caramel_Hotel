@@ -4,6 +4,7 @@ The Accommodation page is loaded from accommodation.py.
 pack(), grid(), and place() arrange widgets on the screen."""
 # The main module is exempt from the assignment function-count limit.
 # parent = the main content area from main.py.
+
 import ast
 import tkinter as tk
 from tkinter import messagebox
@@ -19,6 +20,9 @@ LOGO_FILE = IMAGE_DIR / "caramel_hotel_logo.png"
 CONTACT_MESSAGES_FILE = BASE_DIR / "contact_messages.txt"  # Stores messages submitted through Contact Us
 
 
+# ------------------------------------------------------------
+# SHARED APPLICATION WINDOW AND NAVIGATION
+#------------------------------------------------------------
 class HotelApp(tk.Tk):
     # This runs when HotelApp() is created. It sets up the window, colour
     # navigation, scrolling support and Home page
@@ -71,8 +75,8 @@ class HotelApp(tk.Tk):
 
         # Open the Home page automatically when the program starts.
         self.show_page("Home")
-
-    # Shared navigation
+    
+    # Shared navigation 
     # Build the shared top navigation. It is created once and stays visible when the
     # content area switches between Home, Accommodation, Facility, and so on.
     def _build_navigation(self):
@@ -182,8 +186,12 @@ class HotelApp(tk.Tk):
         elif page == "Login":
             self._build_staff_page()
 
+
+    # ------------------------------------------------------------
+    # ACCOMMODATION PAGE CONNECTION
     # Load AccommodationPage from accommodation.py only when Accommodation is opened.
     # The try/except block shows a message if the separate module cannot be loaded.
+    # ------------------------------------------------------------
     def _build_accommodation_page(self):
         try:
             # This import is inside the method, so the accommodation module is only needed when that page opens.
@@ -290,7 +298,9 @@ class HotelApp(tk.Tk):
             fg=self.TEXT_COLOUR, justify="center", wraplength=850
         ).pack(expand=True, pady=60, padx=30)
 
-    # Home page
+    # ------------------------------------------------------------
+    # HOME PAGE
+    # ------------------------------------------------------------
     # Load the Home page background photo and resize it to the requested size.
     # Pillow (PIL) adds high-quality resizing and a dark fade so white text is readable.
     def _load_home_hero_photo(self, filename, size):
@@ -493,8 +503,7 @@ class HotelApp(tk.Tk):
             hero_block, bg=self.WHITE_COLOUR, padx=12, pady=10,
             highlightbackground="#D8E1E9", highlightthickness=1
         )
-        # place() positions the booking panel relative to the hero: centred horizontally,
-        # 273 pixels down from the top, and 89% as wide as its parent.
+        # place() positions the booking panel relative to the hero: centred horizontally
         booking_panel.place(relx=0.5, y=273, anchor="n", relwidth=0.89)
         booking_panel.grid_columnconfigure(0, weight=2, uniform="home_booking")
         booking_panel.grid_columnconfigure(1, weight=2, uniform="home_booking")
@@ -581,19 +590,19 @@ class HotelApp(tk.Tk):
             icon.pack(side="left")
             icon.create_oval(2, 2, 64, 64, fill="#8FA8BC", outline="")
             white = self.WHITE_COLOUR
-            if icon_kind == "bed":
+            if icon_kind == "bed": # the bed icon 
                 icon.create_rectangle(18, 31, 48, 45, outline=white, width=2)
                 icon.create_rectangle(17, 24, 24, 33, outline=white, width=2)
                 icon.create_rectangle(25, 26, 34, 33, outline=white, width=2)
                 icon.create_line(18, 45, 18, 49, fill=white, width=2)
                 icon.create_line(48, 45, 48, 49, fill=white, width=2)
-            elif icon_kind == "plant":
+            elif icon_kind == "plant": # the plant icon
                 icon.create_line(33, 48, 33, 29, fill=white, width=2)
                 icon.create_arc(17, 20, 34, 39, start=35, extent=225, outline=white, width=2, style="arc")
                 icon.create_arc(32, 14, 49, 34, start=280, extent=225, outline=white, width=2, style="arc")
                 icon.create_arc(22, 13, 44, 37, start=25, extent=130, outline=white, width=2, style="arc")
                 icon.create_line(22, 47, 44, 47, fill=white, width=2)
-            else:
+            else: # the tag icon
                 icon.create_polygon(18, 24, 39, 24, 49, 34, 30, 50, 18, 38,
                                    outline=white, fill="", width=2)
                 icon.create_oval(37, 28, 41, 32, outline=white, width=2)
@@ -837,9 +846,11 @@ class HotelApp(tk.Tk):
         ).pack(anchor="center")
 
 
-    # Facility page
+    # ------------------------------------------------------------
+    # FACILITY PAGE
     # Build the Facility page with large photos alternating left/right with their descriptions.
     # A list of dictionaries stores each facility text and filename so one layout can be reused.
+    # ------------------------------------------------------------
     def _build_facility_page(self):
         body = self._create_scrollable_body()
         page_white = "#FFFFFF"
@@ -1022,9 +1033,12 @@ class HotelApp(tk.Tk):
             cursor="hand2", font=("Arial", 9, "bold"), padx=18, pady=8
         ).pack(anchor="center")
 
-    # Promotions page 
+
+    # ------------------------------------------------------------
+    # PROMOTIONS PAGE
     # Build the Promotions page with alternating image/text banners.
     # Each promotion dictionary stores its title, description, conditions, image filename and side.
+    # ------------------------------------------------------------
     def _build_promotions_page(self):
         body = self._create_scrollable_body()
         self._page_heading(
@@ -1197,7 +1211,7 @@ class HotelApp(tk.Tk):
         self.gallery_photo_refs.append(photo)
 
 
-    # Gallery page
+    # Gallery page formating
     # Search for an image in the folder beside main.py and then in room_images.
     # The filename comparison ignores upper/lower case differences.
     def _find_gallery_image(self, filename):
@@ -1237,8 +1251,12 @@ class HotelApp(tk.Tk):
         except (OSError, ValueError, tk.TclError, AttributeError):
             return None
 
+    
+    # ------------------------------------------------------------
+    # GALLERY PAGE
     # Build the fixed ten-photo gallery in three uneven columns (a masonry layout).
     # The list below controls exactly which image filenames appear in each column.
+    # ------------------------------------------------------------
     def _build_gallery_page(self):
         body = self._create_scrollable_body()
         gallery_white = "#FFFFFF"
@@ -1328,9 +1346,12 @@ class HotelApp(tk.Tk):
                         resize_tile(name, tile, label, tall)
                 )
 
-    # Contact Us page 
+    
+    # ------------------------------------------------------------
+    # CONTACT US PAGE
     # Build the Contact Us page, including contact details and a demo message form.
-    # The form validates input and shows feedback; it does not actually send an email.
+    # The form validates input and shows feedback
+    # ------------------------------------------------------------
     def _build_contact_page(self):
         body = self._create_scrollable_body()
         self._page_heading(body, "Contact Us")
@@ -1451,8 +1472,11 @@ class HotelApp(tk.Tk):
             padx=16, pady=6, cursor="hand2",
         ).pack(pady=(0, 2))
 
-    # Menu page
+    
+    # ------------------------------------------------------------
+    # RESTAURANT MENU PAGE
     # Load RestaurantPage from restaurant.py only when Menu is selected.
+    # ------------------------------------------------------------
     def _build_menu_page(self):
         try:
             from restaurant import RestaurantPage
@@ -1467,8 +1491,10 @@ class HotelApp(tk.Tk):
                 f"Details: {error}"
             )
 
-    # Login page for Staff
+    # ------------------------------------------------------------
+    # STAFF LOGIN AND ADMIN PAGES
     # The staff login and portal are embedded in the same main window.
+    # ------------------------------------------------------------
     def _build_staff_page(self):
         try:
             from staff import StaffPage

@@ -10,10 +10,7 @@ from tkinter import messagebox
 from datetime import datetime
 from pathlib import Path
 
-
-# Convert room numbers created by the previous 50-room expansion to the
-# corrected 101-600 numbering blocks. This keeps existing booking records
-# connected to the same room type after the room.txt numbering is corrected.
+# Convert room numbers from the legacy 101-600 format to the corrected 101-600 format.
 _LEGACY_ROOM_TYPE_ORDER = (
     "Superior Twin", "Superior Queen", "Superior Triple", "Deluxe Twin",
     "Deluxe_Queen", "Deluxe Triple", "2 Bedroom Apartment",
@@ -33,8 +30,11 @@ for _type_index, _room_type in enumerate(_LEGACY_ROOM_TYPE_ORDER):
     }
 
 
+# ------------------------------------------------------------
+# ACCOMMODATION FILE AND ROOM HELPERS
+# ------------------------------------------------------------
 class BookingManager:
-    """Manage accommodation data and shared helpers for the accommodation screen."""
+    # Manage accommodation data and shared helpers for the accommodation screen.
 
     # Set the file locations and field names used by the accommodation pages.
     def __init__(self, page):
@@ -61,9 +61,12 @@ class BookingManager:
             "special_requests", "promo_code", "total_price", "payment_method", "status"
         )
 
+    # ------------------------------------------------------------
+    # BOOKING RECORD STORAGE
+    # ------------------------------------------------------------
     # Read the saved booking records from booking.txt.
     def read_bookings(self):
-        """Read saved booking records from booking.txt without changing the file."""
+        # Read saved booking records from booking.txt without changing the file.
         bookings = []
         if not self.booking_file.exists():
             return bookings
@@ -95,7 +98,7 @@ class BookingManager:
 
     # Read room types from room.txt and create the individual physical rooms.
     def read_rooms(self):
-        """Read compact room-type records and expand each into 50 room numbers."""
+        # Read compact room-type records and expand each into 50 room numbers.
         room_records = []
         if not self.room_file.exists():
             return []
@@ -147,13 +150,13 @@ class BookingManager:
 
     # Create booking.txt with headings only when the file does not exist.
     def ensure_booking_file(self):
-        """Create booking.txt with the current headings only if it does not exist."""
+        # Create booking.txt with the current headings only if it does not exist.
         if not self.booking_file.exists():
             self.write_booking_file([])
 
     # Write all supplied booking records using the correct field order.
     def write_booking_file(self, bookings):
-        """Write the supplied booking records using the current 16-column format."""
+        # Write the supplied booking records using the current 16-column format.
         lines = ["# Caramel Hotel booking records (stored locally)", "|".join(self.booking_fields)]
         for booking in bookings:
             lines.append("|".join(self.safe_field(booking.get(field, "")) for field in self.booking_fields))
@@ -165,12 +168,12 @@ class BookingManager:
     # Clean a value so it does not break the text-file format.
     @staticmethod
     def safe_field(value):
-        """Prevent a value from breaking the pipe-separated text-file format."""
+        # Prevent a value from breaking the pipe-separated text-file format.
         return str(value).replace("|", "/").replace("\r", " ").replace("\n", " ").strip()
 
     # Add one new booking record to the end of booking.txt.
     def append_booking(self, booking):
-        """Append one confirmed booking to booking.txt and report whether it succeeded."""
+        # Append one confirmed booking to booking.txt and report whether it succeeded.
         row = "|".join(self.safe_field(booking.get(field, "")) for field in self.booking_fields)
         try:
             with self.booking_file.open("a", encoding="utf-8") as file:
@@ -180,9 +183,12 @@ class BookingManager:
             messagebox.showerror("File error", f"Could not save booking.txt:\n{error}", parent=self.page)
             return False
 
+    # ------------------------------------------------------------
+    # ROOM AVAILABILITY AND IMAGE HELPERS
+    # ------------------------------------------------------------
     # Find the room photo inside the images folders.
     def room_image_path(self, room):
-        """Find the room image in images/room_images or the images folder."""
+        # Find the room image in images/room_images or the images folder.
         filename = str(room.get("image_filename", "")).strip()
         if not filename:
             return None
@@ -204,7 +210,7 @@ class BookingManager:
 
     # Open and resize a room photo for display in Tkinter.
     def load_photo(self, room, size):
-        """Open a room photo and resize/crop it to fit the requested frame."""
+        # Open a room photo and resize/crop it to fit the requested frame.
         path = self.room_image_path(room)
         if path is None:
             return None
@@ -226,7 +232,7 @@ class BookingManager:
 
     # Remember which canvas or table should respond to mouse-wheel scrolling.
     def register_scroll_target(self, target, *related_widgets):
-        """Register a scrollable canvas/table and the scrollbar attached to it."""
+        # Register a scrollable canvas/table and the scrollbar attached to it.
         if target not in self.page._scroll_targets:
             self.page._scroll_targets.append(target)
         for widget in related_widgets:
@@ -235,7 +241,7 @@ class BookingManager:
 
     # Find the scrollable area underneath the mouse pointer.
     def scroll_target_under_pointer(self, event):
-        """Find the scrollable widget underneath the current mouse pointer."""
+        # Find the scrollable widget underneath the current mouse pointer.
         try:
             widget = self.page.winfo_containing(event.x_root, event.y_root)
         except tk.TclError:
@@ -262,7 +268,7 @@ class BookingManager:
 
     # Scroll the selected area when the mouse wheel is used.
     def on_mousewheel(self, event):
-        """Handle mouse-wheel scrolling on Windows/macOS for the area under the pointer."""
+        # Handle mouse-wheel scrolling on Windows/macOS for the area under the pointer.
         target = self.scroll_target_under_pointer(event)
         if target is None:
             return None
@@ -277,7 +283,7 @@ class BookingManager:
 
     # Handle mouse-wheel scrolling on Linux systems.
     def on_linux_mousewheel(self, event, direction):
-        """Handle Linux wheel-up and wheel-down events for the area under the pointer."""
+        # Handle Linux wheel-up and wheel-down events for the area under the pointer.
         target = self.scroll_target_under_pointer(event)
         if target is None:
             return None
@@ -290,19 +296,19 @@ class BookingManager:
     # Separate the room features into a list for display.
     @staticmethod
     def feature_list(room):
-        """Split the comma-separated room feature text into individual features."""
+        # Split the comma-separated room feature text into individual features.
         return [item.strip() for item in str(room.get("features", "")).split(",") if item.strip()]
 
     # Get the room numbers stored in one booking record.
     @staticmethod
     def room_numbers_in_booking(booking):
-        """Return the physical room numbers stored inside a booking record."""
+        # Return the physical room numbers stored inside a booking record.
         value = str(booking.get("room_number", "")).strip()
         return {number.strip() for number in value.split(",") if number.strip()}
 
     # Check whether a room is already reserved during the requested dates.
     def is_reserved_for_dates(self, room_number, check_in, check_out, bookings=None):
-        """Return True when this physical room is already booked for an overlapping date range."""
+        # Return True when this physical room is already booked for an overlapping date range.
         if bookings is None:
             bookings = self.read_bookings()
         for booking in bookings:
@@ -325,7 +331,7 @@ class BookingManager:
 
     # Find rooms of the selected type that are available for the requested dates.
     def available_rooms_for_dates(self, selected_room, check_in, check_out):
-        """List unreserved rooms of the same room type for the requested dates."""
+        # List unreserved rooms of the same room type for the requested dates.
         bookings = self.read_bookings()
         selected_type = str(selected_room.get("room_type", "")).strip().casefold()
         available = []
@@ -345,7 +351,7 @@ class BookingManager:
 
     # Schedule the room photo to resize after its card has been arranged.
     def schedule_gallery_photo_resize(self, room, image_widget, image_holder, height):
-        """Schedule a resize after Tkinter has calculated the room-card width."""
+        # Schedule a resize after Tkinter has calculated the room-card width.
         try:
             pending = getattr(image_holder, "_photo_resize_after_id", None)
             if pending is not None:
@@ -359,7 +365,7 @@ class BookingManager:
 
     # Resize a room gallery photo to match the card width.
     def resize_gallery_photo(self, room, image_widget, width, height):
-        """Resize a gallery photo to the real card width without side bars."""
+        # Resize a gallery photo to the real card width without side bars.
         if width <= 1:
             return
         try:
@@ -380,7 +386,7 @@ class BookingManager:
 
     # Resize the selected room photo to fit the details panel.
     def resize_detail_photo(self, room, image_panel, image_label, width):
-        """Resize the detail photo to the left panel width while keeping a 2:1 ratio."""
+        # Resize the detail photo to the left panel width while keeping a 2:1 ratio.
         width = int(width)
         if width < 2 or not image_panel.winfo_exists() or image_label is None:
             return

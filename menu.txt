@@ -1,68 +1,67 @@
-menu_dict = {
-    "A01": {"Name": "Mozzarella Sticks", "Category": "Appetizers", "Price": 9.00, "Image": "A01.jpg"},
-    "A02": {"Name": "Chicken Popcorn", "Category": "Appetizers", "Price": 9.00, "Image": "A02.jpg"},
-    "A03": {"Name": "French Fries", "Category": "Appetizers", "Price": 7.00, "Image": "A03.jpg"},
-    "A04": {"Name": "Calamari", "Category": "Appetizers", "Price": 9.00, "Image": "A04.jpg"},
-    "A05": {"Name": "Chicken Wings", "Category": "Appetizers", "Price": 11.50, "Image": "A05.jpg"},
-    "A06": {"Name": "Beef Kebab", "Category": "Appetizers", "Price": 8.00, "Image": "A06.jpg"},
-    "A07": {"Name": "Caesar Salad", "Category": "Appetizers", "Price": 12.00, "Image": "A07.jpg"},
-    "A08": {"Name": "French Onion Soup", "Category": "Appetizers", "Price": 14.50, "Image": "A08.jpg"},
-    "T01": {"Name": "Pad Thai", "Category": "Thai", "Price": 16.00, "Image": "T01.jpg"},
-    "T02": {"Name": "Khao Soi", "Category": "Thai", "Price": 17.00, "Image": "T02.jpg"},
-    "T03": {"Name": "Pad Kra Pao", "Category": "Thai", "Price": 17.00, "Image": "T03.jpg"},
-    "T04": {"Name": "Green Curry With Rice", "Category": "Thai", "Price": 18.00, "Image": "T04.jpg"},
-    "T05": {"Name": "Tom Yum Soup With Rice", "Category": "Thai", "Price": 20.00, "Image": "T05.jpg"},
-    "T06": {"Name": "Tom Kha Gai With Rice", "Category": "Thai", "Price": 20.00, "Image": "T06.jpg"},
-    "W01": {"Name": "Grilled Salmon", "Category": "Western", "Price": 25.00, "Image": "w01.jpg"},
-    "W02": {"Name": "Fish And Chips", "Category": "Western", "Price": 20.00, "Image": "w02.jpg"},
-    "W03": {"Name": "Lasagne", "Category": "Western", "Price": 18.00, "Image": "w03.jpg"},
-    "W04": {"Name": "Spaghetti Bolognese", "Category": "Western", "Price": 19.00, "Image": "w04.jpg"},
-    "W05": {"Name": "Beef Burger", "Category": "Western", "Price": 23.00, "Image": "w05.jpg"},
-    "W06": {"Name": "Steak", "Category": "Western", "Price": 33.00, "Image": "w06.jpg"},
-    "J01": {"Name": "Unagi Chazuke Rice", "Category": "Japanese", "Price": 28.00, "Image": "J01.jpg"},
-    "J02": {"Name": "Katsudon Rice", "Category": "Japanese", "Price": 24.00, "Image": "J02.jpg"},
-    "J03": {"Name": "Japanese Curry Rice", "Category": "Japanese", "Price": 24.00, "Image": "J03.jpg"},
-    "J04": {"Name": "Karaage Rice", "Category": "Japanese", "Price": 24.00, "Image": "J04.jpg"},
-    "J05": {"Name": "Chashu Ramen", "Category": "Japanese", "Price": 22.70, "Image": "J05.jpg"},
-    "J06": {"Name": "Zaru Soba", "Category": "Japanese", "Price": 19.00, "Image": "J06.jpg"},
-    "C01": {"Name": "Sweet And Sour Chicken Rice", "Category": "Chinese", "Price": 18.00, "Image": "C01.jpg"},
-    "C02": {"Name": "Mapo Tofu Rice", "Category": "Chinese", "Price": 16.00, "Image": "C02.jpg"},
-    "C03": {"Name": "Chinese Fried Rice", "Category": "Chinese", "Price": 15.00, "Image": "C03.jpg"},
-    "C04": {"Name": "Chinese Fried Noodles", "Category": "Chinese", "Price": 15.00, "Image": "C04.jpg"},
-    "C05": {"Name": "Braised Beef Noodles", "Category": "Chinese", "Price": 22.00, "Image": "C05.jpg"},
-    "C06": {"Name": "Wonton Noodles", "Category": "Chinese", "Price": 20.00, "Image": "C06.jpg"},
-    "D01": {"Name": "Chocolate Lava Cake", "Category": "Desserts", "Price": 7.00, "Image": "D01.jpg"},
-    "D02": {"Name": "Tiramisu", "Category": "Desserts", "Price": 10.00, "Image": "D02.jpg"},
-    "D03": {"Name": "Cheesecake", "Category": "Desserts", "Price": 10.00, "Image": "D03.jpg"},
-    "D04": {"Name": "Banana Split", "Category": "Desserts", "Price": 9.00, "Image": "D04.jpg"},
-    "D05": {"Name": "Pudding", "Category": "Desserts", "Price": 7.00, "Image": "D05.jpg"},
-    "D06": {"Name": "Creme Brulee", "Category": "Desserts", "Price": 10.00, "Image": "D06.jpg"},
-    "B01": {"Name": "Espresso", "Category": "Beverages", "Price": 7.00, "Image": "B01.jpg"},
-    "B02": {"Name": "Americano", "Category": "Beverages", "Price": 7.00, "Image": "B02.jpg"},
-    "B03": {"Name": "Cappuccino", "Category": "Beverages", "Price": 10.00, "Image": "B03.jpg"},
-    "B04": {"Name": "Matcha Latte", "Category": "Beverages", "Price": 10.00, "Image": "B04.jpg"},
-    "B05": {"Name": "Milk", "Category": "Beverages", "Price": 5.00, "Image": "B05.jpg"},
-    "B06": {"Name": "Chocolate", "Category": "Beverages", "Price": 8.00, "Image": "B06.jpg"},
-    "B07": {"Name": "Apple Juice", "Category": "Beverages", "Price": 10.00, "Image": "B07.jpg"},
-    "B08": {"Name": "Watermelon Juice", "Category": "Beverages", "Price": 10.00, "Image": "B08.jpg"},
-    "B09": {"Name": "Carrot Juice", "Category": "Beverages", "Price": 10.00, "Image": "B09.jpg"},
-    "B10": {"Name": "Orange Juice", "Category": "Beverages", "Price": 10.00, "Image": "B10.jpg"},
-    "B11": {"Name": "Pineapple Juice", "Category": "Beverages", "Price": 10.00, "Image": "B11.jpg"},
-    "B12": {"Name": "Oolong Tea", "Category": "Beverages", "Price": 5.00, "Image": "B12.jpg"},
-    "B13": {"Name": "Green Tea", "Category": "Beverages", "Price": 5.00, "Image": "B13.jpg"},
-    "B14": {"Name": "Black Tea", "Category": "Beverages", "Price": 5.00, "Image": "B14.jpg"},
-    "B15": {"Name": "Ginger Tea", "Category": "Beverages", "Price": 5.00, "Image": "B15.jpg"},
-    "B16": {"Name": "Chamomile Tea", "Category": "Beverages", "Price": 5.00, "Image": "B16.jpg"},
-    "B17": {"Name": "100plus", "Category": "Beverages", "Price": 5.00, "Image": "B17.jpg"},
-    "B18": {"Name": "Coke", "Category": "Beverages", "Price": 5.00, "Image": "B18.jpg"},
-    "B19": {"Name": "Sprite", "Category": "Beverages", "Price": 5.00, "Image": "B19.jpg"},
-    "B20": {"Name": "Root Beer", "Category": "Beverages", "Price": 5.00, "Image": "B20.jpg"},
-    "B21": {"Name": "Mineral Water", "Category": "Beverages", "Price": 3.00, "Image": "B21.jpg"},
-    "WR01": {"Name": "Jacob's Creek Merlot", "Category": "Wines", "Price": 159.00, "Image": "WR01.jpg"},
-    "WR02": {"Name": "Yellow Tail Shiraz", "Category": "Wines", "Price": 180.00, "Image": "WR02.jpg"},
-    "WR03": {"Name": "Paolo Leo Pianerosse Nero Di Troia", "Category": "Wines", "Price": 125.00, "Image": "WR03.jpg"},
-    "WR04": {"Name": "Alcardet 12 Meses Cencibel", "Category": "Wines", "Price": 230.00, "Image": "WR04.jpg"},
-    "WR05": {"Name": "Bruce Jack Pinotage Malbec", "Category": "Wines", "Price": 250.00, "Image": "WR05.jpg"},
-    "WW01": {"Name": "Balduzzi Sauvignon Blanc", "Category": "Wines", "Price": 180.00, "Image": "WW01.jpg"},
-    "WW02": {"Name": "Soldier Farms Chardonnay", "Category": "Wines", "Price": 144.00, "Image": "WW02.jpg"}
-}
+# ID|Name|Category|Price|Image|Description
+A01|Mozzarella Sticks|Appetizers|9.00|A01.jpeg|Golden-fried mozzarella sticks with a crisp coating and a warm, stretchy cheese centre.
+A02|Chicken Popcorn|Appetizers|9.0|A02.jpg|Bite-sized chicken pieces coated in a seasoned, crispy coating for an easy-to-share appetiser.
+A03|French Fries|Appetizers|7.0|A03.jpg|Golden potato fries with a crisp outside and a soft, fluffy centre.
+A04|Calamari|Appetizers|9.0|A04.jpg|Tender calamari rings coated in a light batter and fried until crisp.
+A05|Chicken Wings|Appetizers|11.5|A05.jpg|Juicy chicken wings seasoned and cooked until the outside is deliciously crisp.
+A06|Beef Kebab|Appetizers|8.0|A06.jpg|Tender beef pieces seasoned with aromatic spices and grilled on skewers.
+A07|Caesar Salad|Appetizers|12.0|A07.jpg|A fresh salad of crisp greens, Caesar dressing, crunchy croutons and savoury Parmesan.
+A08|French Onion Soup|Appetizers|14.5|A08.jpg|A comforting soup of slowly caramelised onions in a rich savoury broth, finished with toasted bread and melted cheese.
+T01|Pad Thai|Thai|16.0|T01.jpg|Thai-style stir-fried rice noodles tossed with egg, vegetables and a tangy, savoury sauce.
+T02|Khao Soi|Thai|17.0|T02.jpg|A Northern Thai coconut curry noodle soup topped with noodles and fragrant curry spices.
+T03|Pad Kra Pao|Thai|17.0|T03.jpg|A fragrant Thai basil stir-fry with garlic and chilli, served with rice.
+T04|Green Curry With Rice|Thai|18.0|T04.jpg|Aromatic Thai green curry simmered in coconut milk with vegetables and served with rice.
+T05|Tom Yum Soup With Rice|Thai|20.0|T05.jpg|A hot-and-sour Thai soup with fragrant herbs, chilli and lime, served with rice.
+T06|Tom Kha Gai With Rice|Thai|20.0|T06.jpg|A gentle Thai coconut chicken soup infused with galangal, lemongrass and lime, served with rice.
+W01|Grilled Salmon|Western|25.0|w01.jpg|Grilled salmon seasoned to bring out its natural flavour, with a tender and flaky texture.
+W02|Fish And Chips|Western|20.0|w02.jpg|Crispy battered fish served with golden, freshly cooked chips.
+W03|Lasagne|Western|18.0|w03.jpg|Layers of pasta with a savoury tomato-based filling, creamy sauce and melted cheese.
+W04|Spaghetti Bolognese|Western|19.0|w04.jpg|Spaghetti topped with a rich, slow-simmered tomato and minced beef sauce.
+W05|Beef Burger|Western|23.0|w05.jpg|A seasoned beef patty served in a soft burger bun for a satisfying classic favourite.
+W06|Steak|Western|33.0|w06.jpg|A hearty cut of beef steak, seasoned and grilled to bring out its rich, savoury flavour.
+J01|Unagi Chazuke Rice|Japanese|28.0|J01.jpg|Japanese grilled eel served over rice with a delicate savoury broth and traditional garnishes.
+J02|Katsudon Rice|Japanese|24.0|J02.jpg|A Japanese rice bowl topped with a crispy breaded cutlet, softly cooked egg and savoury sauce.
+J03|Japanese Curry Rice|Japanese|24.0|J03.jpg|Japanese-style curry with a mellow blend of spices, served over steamed rice.
+J04|Karaage Rice|Japanese|24.0|J04.jpg|Japanese-style marinated chicken fried until golden and crisp, served with rice.
+J05|Chashu Ramen|Japanese|22.7|J05.jpg|Japanese ramen noodles served in a savoury broth with slices of tender braised pork.
+J06|Zaru Soba|Japanese|19.0|J06.jpg|Chilled Japanese buckwheat noodles served with a light, savoury dipping sauce.
+C01|Sweet And Sour Chicken Rice|Chinese|18.0|C01.jpg|Chicken served with a bright sweet-and-sour sauce over a bed of rice.
+C02|Mapo Tofu Rice|Chinese|16.0|C02.jpg|Soft tofu in a bold, savoury and mildly spicy bean sauce, served with rice.
+C03|Chinese Fried Rice|Chinese|15.0|C03.jpg|Wok-fried rice tossed with egg, vegetables and savoury seasonings.
+C04|Chinese Fried Noodles|Chinese|15.0|C04.jpg|Chinese-style noodles stir-fried in a savoury sauce with vegetables.
+C05|Braised Beef Noodles|Chinese|22.0|C05.jpg|Tender beef slowly braised in a rich, aromatic broth and served with noodles.
+C06|Wonton Noodles|Chinese|20.0|C06.jpg|Chinese wontons served with springy noodles in a light, savoury broth.
+D01|Chocolate Lava Cake|Desserts|7.0|D01.jpg|A warm chocolate cake with a soft outer layer and a rich, molten chocolate centre.
+D02|Tiramisu|Desserts|10.0|D02.jpg|An Italian-style dessert layered with coffee-soaked sponge, creamy mascarpone and a dusting of cocoa.
+D03|Cheesecake|Desserts|10.0|D03.jpg|Smooth, creamy cheesecake on a buttery biscuit base.
+D04|Banana Split|Desserts|9.0|D04.jpg|A classic dessert pairing banana with scoops of ice cream and sweet toppings.
+D05|Pudding|Desserts|7.0|D05.jpg|A smooth and lightly sweet pudding with a soft, delicate texture.
+D06|Creme Brulee|Desserts|10.0|D06.jpg|A creamy baked custard finished with a thin, crisp layer of caramelised sugar.
+B01|Espresso|Beverages|7.0|B01.jpg|A concentrated shot of freshly brewed espresso with a rich coffee aroma.
+B02|Americano|Beverages|7.0|B02.jpg|A smooth espresso-based coffee diluted with hot water for a lighter, longer drink.
+B03|Cappuccino|Beverages|10.0|B03.jpg|Espresso blended with steamed milk and topped with a soft layer of milk foam.
+B04|Matcha Latte|Beverages|10.0|B04.jpg|Earthy matcha green tea blended with milk for a smooth and creamy drink.
+B05|Milk|Beverages|5.0|B05.jpg|A simple glass of milk with a mild, creamy taste.
+B06|Chocolate|Beverages|8.0|B06.jpg|A comforting chocolate drink with a rich cocoa flavour and creamy texture.
+B07|Apple Juice|Beverages|10.0|B07.jpg|A fruity apple juice with a naturally sweet and refreshing taste.
+B08|Watermelon Juice|Beverages|10.0|B08.jpg|A refreshing watermelon juice with a light, naturally sweet flavour.
+B09|Carrot Juice|Beverages|10.0|B09.jpg|A smooth carrot juice with a gently sweet, earthy flavour.
+B10|Orange Juice|Beverages|10.0|B10.jpg|A bright and refreshing orange juice with a sweet citrus taste.
+B11|Pineapple Juice|Beverages|10.0|B11.jpg|A tropical pineapple juice with a lively, sweet-and-tangy flavour.
+B12|Oolong Tea|Beverages|5.0|B12.jpg|Oolong tea with a fragrant aroma and a smooth, balanced taste.
+B13|Green Tea|Beverages|5.0|B13.jpg|Green tea with a fresh, delicate flavour and a clean finish.
+B14|Black Tea|Beverages|5.0|B14.jpg|A classic black tea with a full-bodied aroma and robust taste.
+B15|Ginger Tea|Beverages|5.0|B15.jpg|A warming ginger tea with a fragrant, gently spicy flavour.
+B16|Chamomile Tea|Beverages|5.0|B16.jpg|A soothing chamomile herbal tea with a soft floral aroma.
+B17|100plus|Beverages|5.0|B17.jpg|A refreshing, lightly citrus-flavoured isotonic drink.
+B18|Coke|Beverages|5.0|B18.jpg|A chilled, fizzy cola soft drink with a familiar sweet and refreshing taste.
+B19|Sprite|Beverages|5.0|B19.jpg|A crisp, fizzy lemon-lime soft drink with a bright citrus flavour.
+B20|Root Beer|Beverages|5.0|B20.jpg|A sweet, fizzy root beer with a distinctive aromatic and lightly spiced flavour.
+B21|Mineral Water|Beverages|3.0|B21.jpg|Refreshing bottled mineral water, served chilled or at room temperature.
+WR01|Jacob's Creek Merlot|Wines|159.0|WR01.jpg|A Merlot red wine with a smooth character and approachable dark-fruit flavours.
+WR02|Yellow Tail Shiraz|Wines|180.0|WR02.jpg|A Shiraz red wine with a bold profile, ripe berry flavours and a hint of spice.
+WR03|Paolo Leo Pianerosse Nero Di Troia|Wines|125.0|WR03.jpg|An Italian red wine made from Nero di Troia grapes, with a rich fruit character and savoury finish.
+WR04|Alcardet 12 Meses Cencibel|Wines|230.0|WR04.jpg|A Spanish Cencibel red wine with a rounded character, dark-fruit notes and an oak-influenced finish.
+WR05|Bruce Jack Pinotage Malbec|Wines|250.0|WR05.jpg|A red blend of Pinotage and Malbec, offering ripe fruit flavours and gentle spice.
+WW01|Balduzzi Sauvignon Blanc|Wines|180.0|WW01.jpg|A Sauvignon Blanc white wine with fresh citrus notes and a crisp, refreshing finish.
+WW02|Soldier Farms Chardonnay|Wines|144.0|WW02.jpg|A Chardonnay white wine with a rounded fruit character and a smooth finish.
