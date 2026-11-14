@@ -344,7 +344,7 @@ def place_order():
         "Thank you for your order",
         f"Thank you, {customer}!\n\n"
         f"Your order {order['order_id']} has been received successfully.\n"
-        f"Order total: {money(total)}\n"
+        f"Order total: {money(order['total'])}\n"
         f"Payment method: {order['payment']}\n\n"
         f"{payment_note}\n\n"
         "Thank you for choosing Caramel Hotel!",

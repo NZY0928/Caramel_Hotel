@@ -1562,8 +1562,21 @@ class StaffPage(tk.Frame):
                 tk.Label(panel, text="No restaurant orders have been marked as left yet.", bg=COLORS["card"],
                          fg=COLORS["muted"], font=("Segoe UI", 10)).pack(pady=15)
 
-    # Return to the Staff login page after confirmation.
+    # Sign out only when the admin presses the Sign Out button.
     def _sign_out(self):
-        if messagebox.askyesno("Sign Out", "Are you sure you want to sign out?", parent=self):
+        if messagebox.askyesno(
+            "Sign Out",
+            "Are you sure you want to sign out?",
+            parent=self
+        ):
+            # Clear the current admin session.
             self.current_user = ""
+
+            # Reset the Staff page to the login screen.
             self._build_login()
+
+            # Return to the Homepage.
+            main_window = self.winfo_toplevel()
+
+            if hasattr(main_window, "show_page"):
+                main_window.show_page("Home")

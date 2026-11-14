@@ -163,8 +163,13 @@ class HotelApp(tk.Tk):
             )
 
         # winfo_children() returns the widgets inside content_frame; destroy() removes old page widgets.
+        saved_staff_page = getattr(self, "staff_page", None)
+
         for widget in self.content_frame.winfo_children():
-            widget.destroy()
+            if widget is saved_staff_page:
+                widget.pack_forget()
+            else:
+                widget.destroy()
         self.page_canvas = None
         self.gallery_photo_refs = []
 
@@ -1497,9 +1502,23 @@ class HotelApp(tk.Tk):
     # ------------------------------------------------------------
     def _build_staff_page(self):
         try:
+            # Check whether the Staff page already exists.
+            saved_page = getattr(self, "staff_page", None)
+
+            if saved_page is not None:
+                try:
+                    if saved_page.winfo_exists():
+                        saved_page.pack(fill="both", expand=True)
+                        return
+                except tk.TclError:
+                    self.staff_page = None
+
+            # Create the Staff page only when it has not been created before.
             from staff import StaffPage
-            page = StaffPage(self.content_frame)
-            page.pack(fill="both", expand=True)
+
+            self.staff_page = StaffPage(self.content_frame)
+            self.staff_page.pack(fill="both", expand=True)
+
         except Exception as error:
             self._show_message_page(
                 "Login",

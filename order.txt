@@ -134,5 +134,65 @@
         "total": "232.00",
         "payment_status": "Pending",
         "status": "Received"
+    },
+    {
+        "order_id": "ORD-00011",
+        "date": "2026-11-14 11:42:40",
+        "customer": "March7",
+        "dining": "Restaurant dining",
+        "location": "7",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "A02",
+                "name": "Chicken Popcorn",
+                "quantity": 3,
+                "description": "Bite-sized chicken pieces coated in a seasoned, crispy coating for an easy-to-share appetiser.",
+                "price": "9.0",
+                "item_total": "27.0"
+            },
+            {
+                "id": "A03",
+                "name": "French Fries",
+                "quantity": 3,
+                "description": "Golden potato fries with a crisp outside and a soft, fluffy centre.",
+                "price": "7.0",
+                "item_total": "21.0"
+            }
+        ],
+        "subtotal": "48.00",
+        "tax_rate": "0.06",
+        "tax": "2.88",
+        "service_charge_rate": "0.10",
+        "service_charge": "4.80",
+        "total": "55.68",
+        "payment_status": "Pending",
+        "status": "Eating"
+    },
+    {
+        "order_id": "ORD-00012",
+        "date": "2026-11-14 12:37:53",
+        "customer": "hihi",
+        "dining": "Restaurant dining",
+        "location": "44",
+        "payment": "Cash",
+        "items": [
+            {
+                "id": "A04",
+                "name": "Calamari",
+                "quantity": 2,
+                "description": "Tender calamari rings coated in a light batter and fried until crisp.",
+                "price": "9.0",
+                "item_total": "18.0"
+            }
+        ],
+        "subtotal": "18.00",
+        "tax_rate": "0.06",
+        "tax": "1.08",
+        "service_charge_rate": "0.10",
+        "service_charge": "1.80",
+        "total": "20.88",
+        "payment_status": "Pending",
+        "status": "Eating"
     }
 ]
